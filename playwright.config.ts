@@ -14,7 +14,8 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? "github" : "list",
+  // In CI: annotations on the pull request, plus an HTML report uploaded when a test fails.
+  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL,
     trace: "retain-on-failure",
@@ -43,7 +44,8 @@ export default defineConfig({
     url: `${baseURL}/en/login`,
     // E2E_REUSE=1 reuses an already running, locally wired server while iterating.
     reuseExistingServer: process.env.E2E_REUSE === "1",
-    timeout: 240_000,
+    // A cold CI runner also downloads the fonts and compiles from scratch.
+    timeout: process.env.CI ? 420_000 : 240_000,
     env: {
       NEXT_PUBLIC_SUPABASE_URL: supabase.url,
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabase.publishableKey,

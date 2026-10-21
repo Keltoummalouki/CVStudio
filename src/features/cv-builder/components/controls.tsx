@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 import { CheckIcon, EyeIcon, EyeOffIcon, LanguagesIcon, RotateCcwIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
@@ -132,6 +132,15 @@ export function OverrideField({
   const { cvLocale } = useBuilder();
   const id = useId();
   const hintId = `${id}-hint`;
+  // Local text so spaces can be typed: the stored override is read back trimmed,
+  // which would drop a trailing space on every keystroke. Outside changes (undo,
+  // reset, switching language) still replace it.
+  const [text, setText] = useState(value);
+  const [synced, setSynced] = useState(value);
+  if (value !== synced) {
+    setSynced(value);
+    if (value !== text.trim()) setText(value);
+  }
   const language = tLanguages(cvLocale);
   const placeholder = source && !source.missing ? source.text : t("missing", { language });
   const Control = multiline ? "textarea" : "input";
@@ -152,11 +161,14 @@ export function OverrideField({
       <Control
         id={id}
         lang={cvLocale}
-        value={value}
+        value={text}
         maxLength={maxLength}
         placeholder={placeholder}
         aria-describedby={hintId}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          setText(event.target.value);
+          onChange(event.target.value);
+        }}
         rows={multiline ? 3 : undefined}
         className={cn(
           fieldControlClassName,

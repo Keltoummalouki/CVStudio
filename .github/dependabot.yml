@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Workflow actions are pinned to commit SHAs; this keeps the pins current.
+  # npm dependencies are pinned and upgraded deliberately (see "Version pins
+  # worth knowing" in README.md), so they are not updated automatically.
+  - package-ecosystem: github-actions
+    directories:
+      - "/"
+      - "/.github/actions/*"
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
