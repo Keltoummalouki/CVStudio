@@ -1,0 +1,57 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+Thumbs.db
+*.pem
+
+# debug
+npm-debug.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# env files: only the placeholder template is committed
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# supabase local state
+/supabase/.branches
+/supabase/.temp
+
+# Private reference CVs contain the owner's personal data.
+# They are design references only and must never be committed.
+/docs/reference-cvs/
+*.pdf
+
+# next-intl generates typed message declarations at dev/build time
+messages/*.d.json.ts
+
+# design review captures (regenerated each review round)
+/.impeccable/review/
+
+# Playwright authenticated session state (local test accounts only)
+/playwright/.auth/

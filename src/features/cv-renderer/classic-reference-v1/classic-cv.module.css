@@ -1,0 +1,303 @@
+/*
+ * classic-reference-v1: reproduces the owner's reference CVs (A4 portrait,
+ * Poppins Regular/Bold, black on white, fine rules, compact rhythm).
+ * Physical units (mm, pt) keep preview, print and PDF identical; the
+ * dashboard's tokens and Tailwind utilities never reach inside the page.
+ *
+ * Sizes and spacing were measured on the reference PDF (text baselines,
+ * rule and photo positions): title 27.5pt, name 17pt, section headings 12pt,
+ * body 11pt on a 15pt line, contacts and dates 10pt. Rules run 5mm further
+ * right than the text column, as in the reference.
+ */
+
+.page {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  /* Margins come from PAGE_MARGINS_MM (classic-cv.tsx), shared with the preview's page breaks. */
+  padding: var(--cv-margin-top) var(--cv-margin-right) var(--cv-margin-bottom) var(--cv-margin-left);
+  background: #fff;
+  color: #000;
+  font-size: 11pt;
+  line-height: 15pt;
+  font-weight: 400;
+  font-kerning: normal;
+  text-align: left;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.strong {
+  font-weight: 700;
+}
+
+/* Rules (header, contacts, section headings) and the skills grid extend past the text column. */
+.bleed {
+  margin-right: calc(-1 * var(--cv-rule-bleed));
+}
+
+/* Header ---------------------------------------------------------------- */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  /* The reference title fills the space beside the portrait almost exactly. */
+  gap: 3.6mm;
+  padding-right: var(--cv-rule-bleed);
+  padding-bottom: 0.8mm;
+  border-bottom: 0.75pt solid #000;
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+  padding-top: 4.2mm;
+  text-align: center;
+}
+
+.title {
+  font-size: 27.5pt;
+  line-height: 1.15;
+  font-weight: 700;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.name {
+  margin-top: 0.4mm;
+  font-size: 17pt;
+  line-height: 1.2;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.photo {
+  flex: none;
+  width: 27mm;
+  height: 27mm;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e8e8e8;
+}
+
+.contacts {
+  padding: 2.3mm 0 3.5mm;
+  border-bottom: 0.75pt solid #000;
+  font-size: 10pt;
+  line-height: 13.3pt;
+  text-align: center;
+}
+
+.contactSeparator {
+  padding: 0 0.35em;
+}
+
+/* Sections ---------------------------------------------------------------- */
+
+.sections {
+  padding-top: 2.5mm;
+}
+
+.section + .section {
+  margin-top: 2mm;
+}
+
+.sectionTitle {
+  margin-bottom: 1.2mm;
+  padding-bottom: 0.8mm;
+  border-bottom: 0.75pt solid #000;
+  font-size: 12pt;
+  line-height: 1.2;
+  font-weight: 700;
+  text-transform: uppercase;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.paragraph {
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Two columns of categorized skills, read down the first column then the
+ * second, like the reference: a wider left column, and the shorter column's
+ * groups spread so both columns end together.
+ */
+.skills {
+  display: grid;
+  /* Reference: left column 12.4–111.6 mm, right column from 112.8 mm to the rule end. */
+  grid-template-columns: 99.2mm minmax(0, 1fr);
+  column-gap: 1.2mm;
+  padding-top: 0.7mm;
+  line-height: 14.3pt;
+}
+
+.skillsSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.skillColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.skillGroup {
+  break-inside: avoid;
+  overflow-wrap: anywhere;
+}
+
+/* Entries (experience, education, projects, certifications) ---------------- */
+
+.entry {
+  padding-left: 0.3mm;
+  break-inside: avoid;
+}
+
+.sectionTitle + .entry {
+  padding-top: 1mm;
+}
+
+.entry + .entry {
+  margin-top: 1.1mm;
+}
+
+.entryHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5mm;
+  break-after: avoid;
+}
+
+.entryTitle {
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.entryTitleRegular {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.date {
+  flex: none;
+  font-size: 10pt;
+  white-space: nowrap;
+}
+
+.bullets {
+  list-style: none;
+}
+
+.bullet {
+  position: relative;
+  padding-left: 5.9mm;
+  overflow-wrap: anywhere;
+  break-inside: avoid;
+}
+
+.bullet::before {
+  content: "";
+  position: absolute;
+  top: 2.4mm;
+  left: 2.4mm;
+  width: 1.2mm;
+  height: 1.2mm;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.techLabel {
+  font-weight: 700;
+  break-after: avoid;
+}
+
+.techList {
+  padding-left: 4.4mm;
+  overflow-wrap: anywhere;
+}
+
+.links {
+  font-size: 10pt;
+  overflow-wrap: anywhere;
+}
+
+/* The reference sets project details a little smaller than the rest. */
+.compact .paragraph {
+  font-size: 10.5pt;
+  line-height: 13.6pt;
+}
+
+.compact .techLabel,
+.compact .techList {
+  font-size: 10pt;
+  line-height: 13.6pt;
+}
+
+.compact .techList {
+  padding-left: 3.2mm;
+}
+
+.compact .entry + .entry {
+  margin-top: 0.7mm;
+}
+
+/* Short lists spread across the line: left, centre, right, as in the reference. */
+.spread {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 4mm;
+  padding-left: 0.3mm;
+}
+
+.spread > :nth-child(3n + 2) {
+  text-align: center;
+}
+
+.spread > :nth-child(3n) {
+  text-align: right;
+}
+
+.subsection + .subsection {
+  margin-top: 1.1mm;
+}
+
+.subsectionTitle {
+  font-weight: 700;
+  break-after: avoid;
+}
+
+/* Preview only: text borrowed from the other language until it is translated. */
+.missing {
+  background: #ffe1d6;
+  box-shadow: 0 0 0 0.6pt #f06a3d;
+  border-radius: 1pt;
+}
+
+@media print {
+  .page {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .missing {
+    background: none;
+    box-shadow: none;
+  }
+}

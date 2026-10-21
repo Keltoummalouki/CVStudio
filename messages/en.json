@@ -1,0 +1,900 @@
+{
+  "metadata": {
+    "titleTemplate": "%s · CVStudio",
+    "defaultTitle": "CVStudio",
+    "description": "Your career information, organized once. Your CV, customized any time."
+  },
+  "common": {
+    "appName": "CVStudio",
+    "skipToContent": "Skip to main content",
+    "close": "Close",
+    "dismiss": "Dismiss notification",
+    "notifications": "Notifications",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "soon": "Soon",
+    "availableSoon": "Available in an upcoming release"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "French"
+  },
+  "navigation": {
+    "label": "Main navigation",
+    "overview": "Overview",
+    "careerData": "Career data",
+    "cvs": "CVs",
+    "templates": "Templates",
+    "settings": "Settings",
+    "newCv": "New CV",
+    "home": "CVStudio home",
+    "short": {
+      "overview": "Overview",
+      "careerData": "Data",
+      "cvs": "CVs",
+      "templates": "Templates",
+      "settings": "Settings"
+    }
+  },
+  "localeSwitcher": {
+    "label": "Interface language",
+    "switchTo": "Switch interface to {language}",
+    "hint": "Changes the dashboard language only. CV content is never translated automatically."
+  },
+  "saveStatus": {
+    "idle": "All changes saved",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "unsaved": "Unsaved changes",
+    "failed": "Couldn’t save",
+    "offline": "Offline: changes kept on this device",
+    "retry": "Retry"
+  },
+  "confirmDialog": {
+    "cancel": "Cancel",
+    "pending": "Working…",
+    "failed": "Couldn’t complete this action. Try again."
+  },
+  "localeSplit": {
+    "complete": "{language}: complete",
+    "partial": "{language}: incomplete",
+    "missing": "{language}: missing",
+    "empty": "{language}: no content yet"
+  },
+  "dateField": {
+    "month": "Month",
+    "year": "Year",
+    "noMonth": "Year only",
+    "noYear": "Select a year",
+    "clear": "Clear date"
+  },
+  "errors": {
+    "boundary": {
+      "title": "This page couldn’t load",
+      "description": "Something went wrong on our side. Your saved data is safe. Try again, or come back in a moment.",
+      "retry": "Try again",
+      "reference": "Reference {digest}"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "This page doesn’t exist or has moved.",
+      "action": "Go to overview"
+    }
+  },
+  "overview": {
+    "title": "Overview",
+    "description": "A little structure. A clear next step. Your career, ready to share.",
+    "counts": {
+      "label": "Workspace summary",
+      "careerRecords": "Career records",
+      "cvs": "CVs",
+      "templates": "Templates",
+      "sections": "Built-in sections"
+    },
+    "gettingStarted": {
+      "title": "Getting started",
+      "description": "Build your workspace, one useful step at a time.",
+      "progress": "{done, number} of {total, number} done",
+      "done": "Done",
+      "next": "Next",
+      "steps": {
+        "profile": {
+          "title": "Add your personal information",
+          "description": "Name, professional title, contact details and links, shared by every CV."
+        },
+        "career": {
+          "title": "Add experience, education and skills",
+          "description": "Enter each record once. Write the English and French versions side by side."
+        },
+        "cv": {
+          "title": "Compose your first CV",
+          "description": "Choose its language, pick the records, reorder sections and preview on A4."
+        },
+        "template": {
+          "title": "Save it as a template",
+          "description": "Reuse the same selection, order and layout to start the next CV."
+        }
+      },
+      "actions": {
+        "profile": "Add details",
+        "career": "Add records",
+        "cv": "New CV",
+        "template": "See how"
+      }
+    },
+    "recentCvs": {
+      "title": "Recent CVs",
+      "viewAll": "View all CVs",
+      "updated": "Updated {date}",
+      "needsTranslation": "Missing translations",
+      "ready": "Ready to export",
+      "empty": {
+        "title": "No CVs yet",
+        "description": "A CV is composed from your career data: its language, what it includes and in which order. Composing never changes your career data."
+      },
+      "description": "Pick up where you left off."
+    },
+    "studio": {
+      "newTitle": "Your next chapter starts here.",
+      "returningTitle": "Make your next move.",
+      "newDescription": "Bring your experience together, then shape a CV for each opportunity. Start with your profile and build from there.",
+      "returningDescription": "Your experience is already here. Pick up your latest CV, refine the details, and make it yours for the next opportunity.",
+      "continueCv": "Continue editing",
+      "addProfile": "Set up my profile",
+      "addCareer": "Add career data",
+      "createCv": "Create a CV",
+      "exploreCvs": "Open my CVs",
+      "lastEdited": "Last edited:",
+      "paperCaption": "One career. A CV for every opportunity."
+    }
+  },
+  "careerData": {
+    "title": "Career data",
+    "description": "The single source for every CV. Enter each record once, in English and French.",
+    "listLabel": "Career data sections",
+    "entryCount": "{count, plural, =0 {No entries} one {# entry} other {# entries}}",
+    "sections": {
+      "profile": {
+        "title": "Personal information",
+        "description": "Name, professional title, summary, contact details, photo and links.",
+        "add": "Edit profile",
+        "singular": "profile"
+      },
+      "technicalSkills": {
+        "title": "Technical skills",
+        "description": "Skill groups such as Languages or Databases, each with its own skills.",
+        "add": "Add skill group",
+        "singular": "skill group"
+      },
+      "experience": {
+        "title": "Work experience",
+        "description": "Roles with dates, achievements and the technologies you used.",
+        "add": "Add experience",
+        "singular": "experience"
+      },
+      "education": {
+        "title": "Education",
+        "description": "Degrees, programs and schools, with dates and details.",
+        "add": "Add education",
+        "singular": "education"
+      },
+      "projects": {
+        "title": "Projects",
+        "description": "Personal and professional projects with descriptions, links and technologies.",
+        "add": "Add project",
+        "singular": "project"
+      },
+      "certifications": {
+        "title": "Certifications",
+        "description": "Certificates with issuer, date and verification link.",
+        "add": "Add certification",
+        "singular": "certification"
+      },
+      "softSkills": {
+        "title": "Soft skills",
+        "description": "Interpersonal strengths such as teamwork or time management.",
+        "add": "Add soft skill",
+        "singular": "soft skill"
+      },
+      "languages": {
+        "title": "Languages",
+        "description": "Spoken languages and your level in each.",
+        "add": "Add language",
+        "singular": "language"
+      },
+      "custom": {
+        "title": "Custom sections",
+        "description": "Your own sections with subsections, paragraphs, bullets or key–value lines.",
+        "add": "Add custom section",
+        "singular": "custom section"
+      }
+    },
+    "sectionsTitle": "Sections",
+    "editor": {
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "backTo": "Back to {section}",
+      "newTitle": "New {item}",
+      "savedToast": "Changes saved",
+      "createdToast": "Created",
+      "stale": {
+        "title": "Changed elsewhere",
+        "description": "This was saved in another tab or device after you opened it. Reload to see the latest version; your unsaved edits here will be replaced.",
+        "reload": "Reload latest"
+      },
+      "errors": {
+        "invalid_input": "Some fields need attention. Check the highlighted fields.",
+        "not_found": "This item no longer exists. It may have been deleted elsewhere.",
+        "unauthorized": "Your session has ended. Sign in again to save.",
+        "unavailable": "Couldn’t save. Check your connection and try again; your edits are kept.",
+        "stale": "This was changed elsewhere. Reload before saving."
+      },
+      "unsaved": {
+        "title": "Discard unsaved changes?",
+        "description": "You have edits that are not saved yet. Leaving now discards them.",
+        "confirm": "Discard changes",
+        "cancel": "Keep editing"
+      },
+      "optional": "Optional"
+    },
+    "localized": {
+      "english": "English",
+      "french": "French",
+      "same": "Same in both languages",
+      "sameHint": "For names, technologies and terms that never change.",
+      "bothLanguages": "Both languages"
+    },
+    "period": {
+      "start": "Start date",
+      "end": "End date",
+      "present": "Present",
+      "current": {
+        "experience": "I currently work here",
+        "education": "In progress",
+        "projects": "Ongoing"
+      }
+    },
+    "records": {
+      "untitled": "Untitled",
+      "edit": "Edit",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "archive": "Archive",
+      "restore": "Restore",
+      "delete": "Delete permanently",
+      "moreActions": "More actions for {name}",
+      "archivedBadge": "Archived",
+      "showArchived": "Show archived ({count, number})",
+      "hideArchived": "Hide archived",
+      "orderFailed": "Couldn’t save the new order. It was put back.",
+      "archivedToast": "Archived",
+      "restoredToast": "Restored",
+      "deletedToast": "Deleted permanently",
+      "actionFailed": "That didn’t work. Nothing was changed.",
+      "archiveDialog": {
+        "title": "Archive “{name}”?",
+        "description": "It will no longer be offered for new CVs. Existing CVs keep showing it, with a warning, until you remove it from them.",
+        "usage": "Used by {documents, plural, =0 {no CV} one {# CV} other {# CVs}} and {templates, plural, =0 {no template} one {# template} other {# templates}}.",
+        "checking": "Checking where it is used…",
+        "confirm": "Archive"
+      },
+      "deleteDialog": {
+        "title": "Delete “{name}” permanently?",
+        "description": "This cannot be undone.",
+        "usage": "{documents, plural, =0 {No CV uses it.} one {# CV still refers to it and will show it as missing.} other {# CVs still refer to it and will show it as missing.}}",
+        "confirm": "Delete permanently"
+      },
+      "empty": {
+        "title": "Nothing here yet",
+        "description": "Add your first entry. Write it in English and French, then reuse it in any CV."
+      },
+      "coverage": "Translation status"
+    },
+    "sortable": {
+      "dragHandle": "Reorder {name}",
+      "pickedUp": "Picked up {name}. Use the arrow keys to move, Space to drop.",
+      "movedTo": "{name} moved to position {position, number} of {total, number}.",
+      "dropped": "{name} dropped at position {position, number} of {total, number}.",
+      "cancelled": "Reordering cancelled. {name} returned to its place.",
+      "instructions": "To reorder with the keyboard, press Space on the handle, move with the arrow keys, then press Space again to drop."
+    },
+    "fields": {
+      "fullName": "Full name",
+      "professionalTitle": "Professional title",
+      "summary": "Summary",
+      "location": "Location",
+      "email": "Email",
+      "phone": "Phone",
+      "photo": "Photo",
+      "contact": "Contact details",
+      "links": "Links",
+      "linkKind": "Type",
+      "linkLabel": "Label",
+      "displayText": "Displayed text",
+      "url": "URL",
+      "addLink": "Add link",
+      "linkKinds": {
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "portfolio": "Portfolio",
+        "website": "Website",
+        "other": "Other"
+      },
+      "organization": "Organization",
+      "role": "Role",
+      "credential": "Degree or program",
+      "institution": "School",
+      "description": "Description",
+      "title": "Title",
+      "projectUrl": "Project link",
+      "sourceUrl": "Source code link",
+      "certificationTitle": "Certificate",
+      "issuer": "Issued by",
+      "issued": "Issue date",
+      "credentialUrl": "Verification link",
+      "bullets": "Achievements",
+      "bulletsHint": "One result or responsibility each.",
+      "addBullet": "Add achievement",
+      "technologies": "Technologies & tools",
+      "technologiesHint": "Usually the same in both languages.",
+      "addTechnology": "Add technology",
+      "remove": "Remove",
+      "skillGroup": "Group name",
+      "skills": "Skills",
+      "addSkill": "Add skill",
+      "addGroup": "Add skill group",
+      "removeGroup": "Remove group",
+      "softSkill": "Soft skill",
+      "addSoftSkill": "Add soft skill",
+      "language": "Language",
+      "proficiency": "Level",
+      "addLanguage": "Add language",
+      "sectionTitle": "Section title",
+      "subsectionTitle": "Subsection title",
+      "addSubsection": "Add subsection",
+      "removeSubsection": "Remove subsection",
+      "itemKind": "Format",
+      "itemKinds": {
+        "bullet": "Bullet",
+        "paragraph": "Paragraph",
+        "key_value": "Label and text"
+      },
+      "itemLabel": "Label",
+      "itemText": "Text",
+      "addItem": "Add item",
+      "groupFallback": "Group {number, number}",
+      "subsectionFallback": "Subsection {number, number}"
+    },
+    "photo": {
+      "upload": "Upload photo",
+      "replace": "Replace",
+      "remove": "Remove",
+      "hint": "JPEG, PNG or WebP, up to 5 MB. Shown as a circle on CVs where you enable it.",
+      "uploading": "Uploading…",
+      "uploaded": "Photo updated",
+      "removed": "Photo removed",
+      "errors": {
+        "too_large": "This file is larger than 5 MB.",
+        "unsupported_type": "Use a JPEG, PNG or WebP image.",
+        "failed": "Couldn’t update the photo. Try again."
+      },
+      "alt": "Profile photo"
+    }
+  },
+  "cvs": {
+    "title": "CVs",
+    "description": "Each CV is an independent document with its own language, selection and order.",
+    "empty": {
+      "title": "No CVs yet",
+      "description": "Compose a CV from your career data, choose its language and what to include, then print it or download a PDF.",
+      "hint": "Add your career data first so there is something to compose."
+    },
+    "status": {
+      "unreadable": "Layout unreadable",
+      "toTranslate": "{count, plural, one {# text to translate} other {# texts to translate}}",
+      "warnings": "{count, plural, one {# warning} other {# warnings}}",
+      "ready": "Ready to export"
+    },
+    "updated": "Updated {date}",
+    "fromTemplate": "From “{name}”",
+    "moreActions": "More actions for {name}",
+    "open": "Open",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "copyName": "Copy of {name}",
+    "duplicated": "CV duplicated",
+    "deleted": "“{name}” deleted",
+    "undo": "Undo",
+    "actionFailed": "That didn’t work. Nothing was changed.",
+    "deleteTitle": "Delete “{name}”?",
+    "deleteDescription": "The CV disappears from your lists. Your career data and templates are not affected.",
+    "new": {
+      "title": "New CV",
+      "description": "A CV starts with all your current career data in the reference order. Then choose what to keep for this application.",
+      "back": "CVs",
+      "name": "Name",
+      "nameHint": "Only you see it. Name it after the role or company.",
+      "namePlaceholder": "e.g. Frontend developer – Acme",
+      "language": "CV language",
+      "languageHint": {
+        "en": "Headings, dates and your English texts.",
+        "fr": "Headings, dates and your French texts."
+      },
+      "languageNote": "You can switch later. Texts you have not written in that language are listed so you can complete them.",
+      "create": "Create and open",
+      "creating": "Creating…",
+      "emptyData": "Your career data is still mostly empty, so the CV will start almost blank.",
+      "emptyDataLink": "Add career data",
+      "errors": {
+        "invalid_input": "Check the name and try again.",
+        "stale": "Something changed in the meantime. Try again.",
+        "not_found": "That CV no longer exists.",
+        "unauthorized": "Your session has expired. Sign in again to continue.",
+        "unavailable": "The CV couldn’t be created. Check your connection and try again."
+      },
+      "independent": "A separate document, built from your career data. Make it your own next."
+    },
+    "library": {
+      "title": "Your documents",
+      "search": "Search your CVs",
+      "clearSearch": "Clear search",
+      "filter": "Filter CVs by status",
+      "all": "All CVs",
+      "ready": "Ready",
+      "attention": "Needs attention",
+      "results": "{count, plural, one {# CV found} other {# CVs found}}",
+      "noResults": "No CVs match this view",
+      "noResultsHint": "Try a different name or show all your documents.",
+      "reset": "Show all CVs"
+    }
+  },
+  "cv": {
+    "sections": {
+      "summary": "Profile",
+      "technical_skills": "Technical skills",
+      "experience": "Professional experience",
+      "education": "Education",
+      "projects": "Projects",
+      "certifications": "Certifications",
+      "soft_skills": "Soft skills",
+      "languages": "Languages"
+    },
+    "contact": {
+      "phone": "Phone",
+      "email": "Email",
+      "location": "Location",
+      "linkedin": "LinkedIn",
+      "github": "GitHub",
+      "portfolio": "Portfolio",
+      "website": "Website",
+      "other": "Link"
+    },
+    "technologies": "Technologies & tools used",
+    "present": "Present",
+    "colon": ":",
+    "photoAlt": "Portrait",
+    "projectLink": "Live",
+    "sourceLink": "Source",
+    "credentialLink": "Credential"
+  },
+  "cvBuilder": {
+    "present": "Present",
+    "missingIn": "Missing in {language}",
+    "leave": {
+      "title": "Leave without saving?",
+      "description": "Your latest changes couldn’t be saved. If you leave now, they are lost.",
+      "confirm": "Leave anyway",
+      "cancel": "Stay"
+    },
+    "visibility": {
+      "toggle": "Show “{name}” on the CV",
+      "shown": "Shown on the CV",
+      "hidden": "Hidden on the CV"
+    },
+    "override": {
+      "missing": "Not written in {language} yet",
+      "reset": "Use career data",
+      "hint": "Only for this CV, in {language}. Leave empty to use your career data.",
+      "hintMissing": "Your career data has no {language} version. Write it here for this CV, or translate it in your career data."
+    },
+    "sections": {
+      "summary": "Summary",
+      "customFallback": "Custom section"
+    },
+    "details": {
+      "empty": "This entry has no achievements or technologies yet.",
+      "bullets": "Achievements",
+      "bulletsHint": "Hide, reorder or reword them for this CV only.",
+      "bulletFallback": "Achievement {number, number}",
+      "edited": "Reworded",
+      "editWording": "Reword “{name}” for this CV",
+      "wording": "Wording on this CV",
+      "technologies": "Technologies & tools",
+      "technologiesHint": "Select the ones to show.",
+      "technologiesOff": "Technologies are hidden for this entry."
+    },
+    "records": {
+      "untitled": "Untitled",
+      "included": "In this CV ({count, number})",
+      "includedHint": "Order, show or hide entries. Open one for its options.",
+      "noRecords": "You have no entries of this kind yet. Add them in your career data.",
+      "noneIncluded": "No entry is included yet. Add one below.",
+      "deleted": "Deleted entry",
+      "deletedBadge": "Deleted from career data",
+      "archivedBadge": "Archived",
+      "missingCount": "{count, number} to translate",
+      "remove": "Remove “{name}” from this CV",
+      "removeShort": "Remove from this CV",
+      "archivedHint": "Archived in your career data. It still shows on this CV until you remove it here.",
+      "editSource": "Edit in career data",
+      "available": "Not in this CV ({count, number})",
+      "availableHint": "Entries added to your career data later also appear here.",
+      "addAll": "Add all",
+      "add": "Add “{name}”",
+      "addShort": "Add",
+      "show": "Show",
+      "fields": {
+        "dates": "Dates",
+        "location": "Location",
+        "technologies": "Technologies",
+        "description": "Description",
+        "links": "Links",
+        "issuer": "Issuer"
+      },
+      "overrides": {
+        "role": "Role on this CV",
+        "credential": "Degree or program on this CV",
+        "description": "Description on this CV",
+        "title": "Title on this CV"
+      }
+    },
+    "skills": {
+      "empty": "You have no technical skills yet. Add skill groups in your career data.",
+      "layout": "Layout",
+      "columns": "{count, plural, one {One column} other {# columns}}",
+      "split": "Right column starts with",
+      "splitAuto": "Automatic (half the groups)",
+      "groups": "Skill groups",
+      "groupsHint": "Order and show groups. Select skills to show; new skills appear automatically.",
+      "untitledGroup": "Untitled group",
+      "missingCount": "{count, number} to translate",
+      "skillsOf": "Skills in {name}"
+    },
+    "lists": {
+      "emptySoftSkills": "You have no soft skills yet. Add them in your career data.",
+      "emptyLanguages": "You have no languages yet. Add them in your career data.",
+      "items": "Items",
+      "itemsHint": "Order, show or hide items. New items appear automatically.",
+      "untitled": "Item {number, number}"
+    },
+    "custom": {
+      "deleted": "This custom section was deleted from your career data. Remove it from the CV.",
+      "archivedHint": "Archived in your career data. It still shows on this CV until you remove it here.",
+      "subsections": "Subsections",
+      "subsectionsHint": "Order, show or hide subsections and their items.",
+      "untitledSubsection": "Subsection {number, number}",
+      "untitledItem": "Item {number, number}"
+    },
+    "summary": {
+      "text": "Summary on this CV",
+      "empty": "You have no summary yet. Write one in your profile, or only for this CV above."
+    },
+    "header": {
+      "title": "Title on this CV",
+      "show": "Show",
+      "showHint": "Details come from your profile.",
+      "unavailable": "{field}: not filled in your profile",
+      "fields": {
+        "showTitle": "Title",
+        "showName": "Name",
+        "showPhoto": "Photo",
+        "showPhone": "Phone",
+        "showEmail": "Email",
+        "showLocation": "Location",
+        "showLinks": "Links"
+      },
+      "noPhoto": "No photo in your profile. Add one there to show it on the CV.",
+      "links": "Links",
+      "linksHint": "Order and show links. New links appear automatically.",
+      "editProfile": "Edit profile"
+    },
+    "section": {
+      "visible": "Shown",
+      "remove": "Remove",
+      "removed": "“{name}” removed from this CV",
+      "hiddenHint": "Hidden: kept in this CV with its settings, but not printed.",
+      "heading": "Heading on this CV"
+    },
+    "outline": {
+      "label": "CV structure",
+      "header": "Header & contact",
+      "headerDetail": "Title, name, photo, contact",
+      "sections": "Sections ({count, number})",
+      "included": "{count, plural, =0 {No entries} one {# entry} other {# entries}}",
+      "missing": "{count, plural, one {# text to translate} other {# texts to translate}}",
+      "empty": "No sections. Add one below.",
+      "add": "Add section",
+      "allAdded": "Every section is already in this CV.",
+      "builtIn": "Sections",
+      "custom": "Custom sections",
+      "back": "Structure",
+      "title": "Your document",
+      "hint": "Choose a section to edit. Drag to reorder, or use the arrow controls."
+    },
+    "preview": {
+      "label": "Preview",
+      "pages": "{count, plural, one {# page (A4)} other {# pages (A4)}}",
+      "pageBreak": "Page {number, number}",
+      "live": "Live preview",
+      "zoom": "Preview zoom",
+      "fit": "Fit",
+      "actualSize": "View at 100%",
+      "canvas": "CV preview canvas",
+      "hint": "Select a section on the page to edit it. Page breaks are estimates; check the final print layout before sending."
+    },
+    "issues": {
+      "title": "Before you export",
+      "header": "Header",
+      "missing": "{field} missing in {language}",
+      "archived": "Archived in your career data",
+      "deleted": "Deleted from your career data",
+      "show": "Show",
+      "toFix": "{count, number} to translate",
+      "warnings": "{count, plural, one {# warning} other {# warnings}}",
+      "ready": "Ready",
+      "blockingDescription": "Printing and PDF stay blocked until every shown text exists in {language}: translate it in your career data, reword it for this CV, or hide it.",
+      "clearDescription": "Nothing blocks the export. Warnings are for your information.",
+      "none": "Every shown text is written in this CV’s language.",
+      "blocking": "Missing translations ({count, number})",
+      "warningsTitle": "Warnings ({count, number})",
+      "fields": {
+        "title": "Title",
+        "summary": "Summary",
+        "location": "Location",
+        "linkLabel": "Link label",
+        "sectionTitle": "Section heading",
+        "groupTitle": "Skill group name",
+        "skill": "Skill",
+        "role": "Role",
+        "detail": "Achievement",
+        "credential": "Degree or program",
+        "institution": "School",
+        "description": "Description",
+        "issuer": "Issuer",
+        "name": "Language name",
+        "proficiency": "Level",
+        "subsectionTitle": "Subsection title",
+        "label": "Label",
+        "text": "Text"
+      },
+      "allSet": "All set for this language"
+    },
+    "toolbar": {
+      "back": "Back to CVs",
+      "name": "CV name",
+      "language": "CV language",
+      "languageHint": "Switching keeps the wording you wrote for both languages.",
+      "undo": "Undo",
+      "undoShortcut": "Undo (Ctrl+Z)",
+      "redo": "Redo",
+      "redoShortcut": "Redo (Ctrl+Shift+Z)",
+      "print": "Print",
+      "download": "PDF",
+      "more": "More actions",
+      "duplicate": "Duplicate",
+      "delete": "Delete CV",
+      "saveFirst": "Your changes aren’t saved yet. Try again in a moment.",
+      "copyName": "Copy of {name}",
+      "actionFailed": "That didn’t work. Nothing was changed.",
+      "duplicated": "Duplicated. You’re now editing the copy.",
+      "deleted": "“{name}” deleted",
+      "deleteTitle": "Delete “{name}”?",
+      "deleteDescription": "The CV disappears from your lists. Your career data and templates are not affected.",
+      "renameHint": "Click to rename this CV"
+    },
+    "conflict": {
+      "message": "This CV was changed in another tab or device. Your latest edits are not saved.",
+      "loadLatest": "Load the other version",
+      "keepMine": "Keep my version"
+    },
+    "saveErrors": {
+      "invalid_input": "Some content is too long or invalid, so it couldn’t be saved.",
+      "stale": "This CV was changed elsewhere.",
+      "not_found": "This CV no longer exists. It may have been deleted in another tab.",
+      "unauthorized": "Your session has expired. Sign in again in a new tab, then retry.",
+      "unavailable": "Couldn’t save. Your edits are kept here; check your connection and retry."
+    },
+    "views": {
+      "label": "Editor view",
+      "edit": "Edit",
+      "preview": "Preview"
+    },
+    "workspace": {
+      "headerHint": "Make your first impression. Choose the profile details to show on this CV."
+    }
+  },
+  "templates": {
+    "title": "Templates",
+    "description": "Reusable CV configurations. Applying a template creates a new CV; it never changes existing ones.",
+    "empty": {
+      "title": "No templates yet",
+      "description": "Reusable presets are coming soon. For now, duplicate an existing CV to keep its selection, section order and layout settings.",
+      "goToCvs": "Go to CVs"
+    },
+    "concepts": {
+      "title": "How these fit together",
+      "cv": {
+        "term": "CV",
+        "definition": "A document you edit, print and export."
+      },
+      "template": {
+        "term": "Template",
+        "definition": "A saved copy of a CV’s configuration, used to start new CVs."
+      },
+      "style": {
+        "term": "Visual style",
+        "definition": "How a CV looks on the page. Changing styles never changes content."
+      }
+    },
+    "visualStyle": {
+      "title": "Visual style",
+      "name": "Classic",
+      "description": "A4 portrait, Poppins, fine rules, two-column skills and right-aligned dates, reproduced from your reference CV.",
+      "included": "Included"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Preferences for this workspace.",
+    "language": {
+      "title": "Interface language",
+      "description": "The language of menus, buttons and messages. Each CV has its own output language, chosen in the CV itself."
+    },
+    "about": {
+      "title": "About",
+      "version": "Version {version}",
+      "description": "One place for your career, with room for every version of your story."
+    },
+    "account": {
+      "title": "Account",
+      "description": "The account signed in to this workspace.",
+      "signedInAs": "Signed in as {email}",
+      "signOut": "Sign out"
+    }
+  },
+  "auth": {
+    "title": "Sign in",
+    "description": "Private workspace, reserved for the owner account.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "pending": "Signing in…",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "tagline": "Your career information, organized once. Your CV, customized any time.",
+    "noSignUp": "There is no public sign-up. The owner account is created by the administrator.",
+    "signedOut": "You’re signed out.",
+    "configMissing": "Supabase is not configured. Add the project URL and publishable key to .env.local.",
+    "notAuthorized": {
+      "title": "This account has no access",
+      "description": "{email} is signed in, but only the workspace owner can use CVStudio.",
+      "signOut": "Sign out and use another account"
+    },
+    "errors": {
+      "invalid_input": "Check the highlighted fields.",
+      "invalid_credentials": "Email or password is incorrect.",
+      "not_authorized": "This account is not allowed to use this workspace.",
+      "rate_limited": "Too many attempts. Wait a few minutes, then try again.",
+      "unavailable": "Sign-in is unavailable right now. Try again in a moment."
+    },
+    "studioHeadline": "Your story. Beautifully composed.",
+    "workflow": {
+      "collect": "Collect your experience",
+      "compose": "Compose your CV",
+      "refine": "Make it yours"
+    }
+  },
+  "validation": {
+    "required": "This field is required.",
+    "invalidEmail": "Enter a valid email address.",
+    "tooLong": "This is too long.",
+    "requiredOneLanguage": "Write this in at least one language.",
+    "invalidUrl": "Enter a full link starting with https://",
+    "invalidPhone": "Use digits, spaces and + ( ) - only.",
+    "endBeforeStart": "The end date is before the start date.",
+    "tooMany": "There are too many items here.",
+    "invalidLocalizedText": "Choose either one text for both languages or separate translations.",
+    "invalid": "Check this field."
+  },
+  "studio": {
+    "workspace": "My workspace",
+    "privateWorkspace": "Private workspace",
+    "railTitle": "A career worth keeping.",
+    "railDescription": "Keep your story in one place. Shape it for every opportunity.",
+    "editProfile": "Your profile",
+    "breadcrumb": "Current location",
+    "editor": "Editor",
+    "studioNote": "Your next chapter starts here."
+  },
+  "careerWorkspace": {
+    "navigation": {
+      "overview": "Library overview"
+    },
+    "profile": {
+      "readyTitle": "Your career starts with you.",
+      "startTitle": "First, introduce yourself.",
+      "description": "Keep your name, professional summary and contact details together. This is the starting point for every CV you create.",
+      "started": "Your profile has been started",
+      "edit": "Edit personal details",
+      "start": "Set up your profile"
+    },
+    "groups": {
+      "path": {
+        "title": "Experience & learning",
+        "description": "The roles, education and credentials behind your next move."
+      },
+      "abilities": {
+        "title": "Skills & strengths",
+        "description": "What you know, how you work and the languages you speak."
+      },
+      "work": {
+        "title": "Work that stands out",
+        "description": "Projects and extra details that make your career your own."
+      }
+    },
+    "startSection": "Add your first entry",
+    "editor": {
+      "sourceHint": "You’re editing your master career data. Save it here, then choose what to include in each CV."
+    },
+    "records": {
+      "search": "Search active entries…",
+      "clearSearch": "Clear search",
+      "needsTranslation": "Needs translation",
+      "resultCount": "Showing {count, number} of {total, number}",
+      "reorderHint": "Drag or use the arrows to reorder.",
+      "filteredHint": "Clear filters to reorder entries.",
+      "noResults": "No matching entries",
+      "noResultsDescription": "Try a different search or clear the translation filter to see all your active entries.",
+      "clearFilters": "Clear filters",
+      "allArchived": "Your active list is clear",
+      "allArchivedDescription": "Add a new entry above, or open your archive below to restore an existing one.",
+      "orderSaved": "Order saved"
+    },
+    "empty": {
+      "includeTitle": "A useful entry includes",
+      "languages": "English and French wording, ready to reuse in either language.",
+      "experience": {
+        "title": "Give your experience a place.",
+        "description": "Capture a role once. Pick the achievements that matter when you compose your next CV.",
+        "first": "Your role, organization and the dates you worked there.",
+        "second": "Specific achievements and the tools you used."
+      },
+      "education": {
+        "title": "Build on what you’ve learned.",
+        "description": "Keep your education in one place so you can bring the right qualifications into every application.",
+        "first": "A degree or program, school and dates.",
+        "second": "Relevant subjects, honors or details worth highlighting."
+      },
+      "projects": {
+        "title": "Show what you’ve built.",
+        "description": "Create a library of projects you can draw from, whether they were personal, collaborative or professional.",
+        "first": "A clear project title, description and timeframe.",
+        "second": "Your contribution, technologies and links to the work."
+      },
+      "certifications": {
+        "title": "Put your credentials on record.",
+        "description": "Keep certificates and their verification details ready for the roles that need them.",
+        "first": "The certificate name and issuing organization.",
+        "second": "The issue date and a verification link, if available."
+      },
+      "custom": {
+        "title": "Make room for your own story.",
+        "description": "Volunteering, publications, interests or something else. Create a section that fits your career.",
+        "first": "A section title and subsections that organize your content.",
+        "second": "Paragraphs, bullet points or short label-and-text entries."
+      }
+    }
+  }
+}
