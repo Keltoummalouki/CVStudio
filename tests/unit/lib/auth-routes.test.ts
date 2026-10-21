@@ -18,6 +18,8 @@ describe("classifyPath", () => {
   it("protects the dashboard subtree only", () => {
     expect(classifyPath("/dashboard")).toBe("protected");
     expect(classifyPath("/dashboard/cvs/123")).toBe("protected");
+    expect(classifyPath("/print/123")).toBe("protected");
+    expect(classifyPath("/printer")).toBe("public");
     expect(classifyPath("/dashboards")).toBe("public");
     expect(classifyPath("/login")).toBe("auth");
     expect(classifyPath("/")).toBe("public");

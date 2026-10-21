@@ -2,7 +2,7 @@
 
 > **Your career information, organized once. Your CV, customized any time.**
 
-**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview). Saved templates, print and PDF export are **planned**, not yet implemented; see [Development and setup](#development-and-setup).
+**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus print and PDF download, verified locally but not yet on Vercel. Saved templates are **planned**, not yet implemented; see [Development and setup](#development-and-setup).
 
 ## Overview
 
@@ -249,7 +249,7 @@ CVs contain private personal information. Security is mandatory:
 
 ## Development and setup
 
-**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Saved templates, print and PDF follow; see the roadmap below.
+**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing); the PDF path on Vercel is not verified yet. Saved templates follow; see the roadmap below.
 
 ### Prerequisites
 

@@ -1,7 +1,7 @@
 # CLAUDE.md — CVStudio
 
 > Coding-agent operating instructions. Read this file and `README.md` before planning or changing code.
-> Status: **Phases 1–4 implemented** (foundation, owner auth + RLS migrations, career-data CRUD, CV Builder with live A4 preview). Saved templates (presets), print and PDF export are not implemented yet.
+> Status: **Phases 1–4 implemented** (foundation, owner auth + RLS migrations, career-data CRUD, CV Builder with live A4 preview), plus print and PDF download, verified locally only: the Vercel PDF path is untested. Saved templates (presets) are not implemented yet.
 
 ## 1. Product mission
 
@@ -228,6 +228,7 @@ Do not guess final SQL schema from this outline. Design indexes, constraints, fo
 - Both Print and Download must use the same styled HTML/document source or an explicitly tested equivalent. Avoid maintaining three divergent renderers.
 - Use `@page { size: A4; }`, print media styles, predictable margins, page-break protections for headings and compact entry blocks. Avoid blank pages, footer overlaps, clipped content, and fake one-page squeezing.
 - Real PDF output must retain selectable/searchable text and preferably functional URLs; do not flatten the entire CV into an image.
+- Keep CV text in normal flow: no `position`, `float`, `transform`, `opacity` or `z-index` on boxes holding text. Chromium writes PDF text in paint order, which is what copy-paste and ATS parsers read; positioned or floated text lands out of place (e.g. every bullet after the last section). `tests/e2e/cv-export.spec.ts` checks the reading order.
 - Do not store exported PDFs publicly by default. Download on demand or use private short-lived signed access when necessary.
 - Test French/English, short/long CVs, photo on/off, optional sections, and multi-page overflow using exported artifacts, not just browser preview.
 

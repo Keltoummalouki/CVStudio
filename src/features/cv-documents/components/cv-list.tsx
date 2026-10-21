@@ -4,9 +4,11 @@ import { useId, useState } from "react";
 import {
   ArrowUpRightIcon,
   CopyIcon,
+  DownloadIcon,
   EllipsisIcon,
   FileSearchIcon,
   PencilLineIcon,
+  PrinterIcon,
   SearchIcon,
   Trash2Icon,
   XIcon,
@@ -25,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useCvExport } from "@/features/cv-export/components/use-cv-export";
 import { Link, useRouter } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { deleteCv, duplicateCv, restoreCv } from "../server/actions";
@@ -50,6 +53,18 @@ export function CvList({ cvs }: { cvs: readonly CvListItem[] }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "ready" | "attention">("all");
   const [deleting, setDeleting] = useState<CvListItem | null>(null);
+  const tExport = useTranslations("cvExport");
+  const exporter = useCvExport();
+  /** Exports need every shown text in the CV language; the editor lists what is missing. */
+  const exportable = (cv: CvListItem) => {
+    if (cv.missingTranslations === 0) return true;
+    toast.error(
+      cv.missingTranslations === null
+        ? t("actionFailed")
+        : tExport("errors.missing_translations", { count: cv.missingTranslations }),
+    );
+    return false;
+  };
   const needsAttention = (cv: CvListItem) => cv.missingTranslations !== 0 || cv.warnings > 0;
   const counts = {
     all: cvs.length,
@@ -236,6 +251,24 @@ export function CvList({ cvs }: { cvs: readonly CvListItem[] }) {
                     <PencilLineIcon aria-hidden="true" />
                     {t("open")}
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      if (exportable(cv)) exporter.openPrint(cv.id);
+                    }}
+                  >
+                    <PrinterIcon aria-hidden="true" />
+                    {tExport("print")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={exporter.downloading}
+                    onSelect={() => {
+                      if (exportable(cv)) void exporter.downloadPdf(cv.id, cv.name);
+                    }}
+                  >
+                    <DownloadIcon aria-hidden="true" />
+                    {tExport("download")}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => void duplicate(cv)}>
                     <CopyIcon aria-hidden="true" />
                     {t("duplicate")}

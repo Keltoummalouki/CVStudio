@@ -44,6 +44,11 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "6mb",
     },
   },
+  // The serverless Chromium used for PDF export ships as compressed files that
+  // are read at runtime, not imported, so the bundle tracer must be told.
+  outputFileTracingIncludes: {
+    "/api/cvs/[cvId]/pdf": ["./node_modules/@sparticuz/chromium/bin/**"],
+  },
   turbopack: {
     rules: {
       "*.css": {

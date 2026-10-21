@@ -17,8 +17,8 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { SaveStatus } from "@/components/feedback/save-status";
-import { UpcomingAction } from "@/components/feedback/upcoming-action";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CV_NAME_MAX } from "@/features/cv-documents/schemas";
+import { useCvExport } from "@/features/cv-export/components/use-cv-export";
 import { deleteCv, duplicateCv, restoreCv } from "@/features/cv-documents/server/actions";
 import type { CvDocument } from "@/features/cv-documents/server/queries";
 import { LOCALES, type Locale } from "@/lib/i18n/config";
@@ -35,7 +36,7 @@ import { cn } from "@/lib/utils";
 import type { CvDefinition } from "../definition";
 import type { CvLabelSet } from "../labels";
 import type { MasterData } from "../master-data";
-import { resolveCv } from "../resolve";
+import { isBlockingIssue, resolveCv } from "../resolve";
 import { BuilderProvider } from "./builder-context";
 import { CvPreview } from "./cv-preview";
 import { HeaderEditor } from "./header-editor";
@@ -142,6 +143,31 @@ export function CvBuilder({ document, master, labels, photoUrl }: CvBuilderProps
     () => resolveCv(draft.definition, master, draft.locale, labels[draft.locale]),
     [draft.definition, draft.locale, master, labels],
   );
+
+  const exporter = useCvExport();
+  const blockingCount = issues.filter(isBlockingIssue).length;
+
+  /** Export only what is saved, and only when every shown text exists in the CV language. */
+  const canExport = () => {
+    if (blockingCount === 0) return true;
+    setIssuesOpen(true);
+    toast.error(t("toolbar.exportBlocked", { count: blockingCount }));
+    return false;
+  };
+  const saveBeforeExport = async () => {
+    if (await autosave.flush()) return true;
+    toast.error(t("toolbar.saveFirst"));
+    return false;
+  };
+  const print = () => {
+    if (canExport()) exporter.openPrint(document.id, saveBeforeExport);
+  };
+  const download = () => {
+    if (!canExport()) return;
+    void exporter.downloadPdf(document.id, draft.name, saveBeforeExport).then((result) => {
+      if (!result.ok && result.error === "missing_translations") setIssuesOpen(true);
+    });
+  };
 
   const updateDefinition = useCallback(
     (change: (definition: CvDefinition) => CvDefinition) =>
@@ -299,14 +325,20 @@ export function CvBuilder({ document, master, labels, photoUrl }: CvBuilderProps
               </div>
               <IssuesPanel open={issuesOpen} onOpenChange={setIssuesOpen} onShow={select} />
               <div className="hidden items-center gap-2 md:flex">
-                <UpcomingAction size="sm" hideBadge>
+                <Button type="button" variant="outline" size="sm" onClick={print}>
                   <PrinterIcon aria-hidden="true" />
                   {t("toolbar.print")}
-                </UpcomingAction>
-                <UpcomingAction size="sm" variant="default" hideBadge>
-                  <DownloadIcon aria-hidden="true" />
-                  {t("toolbar.download")}
-                </UpcomingAction>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={download}
+                  disabled={exporter.downloading}
+                  aria-label={exporter.downloading ? undefined : t("toolbar.downloadLabel")}
+                >
+                  {exporter.downloading ? <Spinner /> : <DownloadIcon aria-hidden="true" />}
+                  {exporter.downloading ? t("toolbar.preparing") : t("toolbar.download")}
+                </Button>
               </div>
             </div>
             <DropdownMenu>
@@ -322,6 +354,19 @@ export function CvBuilder({ document, master, labels, photoUrl }: CvBuilderProps
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem className="md:hidden" onSelect={print}>
+                  <PrinterIcon aria-hidden="true" />
+                  {t("toolbar.print")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="md:hidden"
+                  disabled={exporter.downloading}
+                  onSelect={download}
+                >
+                  <DownloadIcon aria-hidden="true" />
+                  {t("toolbar.downloadLabel")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="md:hidden" />
                 <DropdownMenuItem onSelect={() => void duplicate()}>
                   <CopyIcon aria-hidden="true" />
                   {t("toolbar.duplicate")}

@@ -10,26 +10,12 @@ import type {
 } from "@/features/cv-builder/resolve";
 import { cn } from "@/lib/utils";
 import { poppins } from "../fonts";
-import { splitSkillColumns } from "./layout";
+import { PAGE_MARGINS_MM, splitSkillColumns } from "./layout";
 import styles from "./classic-cv.module.css";
 
 export const CLASSIC_REFERENCE_V1 = "classic-reference-v1";
 
-/**
- * Page geometry measured on the reference PDF. The first page starts 1.2 mm
- * from the top edge (the portrait almost touches it); later pages of a long
- * CV get a regular top margin. Text runs from 12.4 mm to 197.9 mm, and rules
- * continue 5.2 mm further right. The preview's page-break markers (and later
- * the print margins) use the same values.
- */
-export const PAGE_MARGINS_MM = {
-  firstTop: 1.2,
-  top: 10,
-  bottom: 6,
-  left: 12.4,
-  right: 12.1,
-  ruleBleed: 5.2,
-} as const;
+export { PAGE_MARGINS_MM };
 
 const marginStyle = {
   "--cv-margin-top": `${PAGE_MARGINS_MM.firstTop}mm`,
@@ -165,7 +151,9 @@ function Blocks({ blocks, colon }: { blocks: readonly Block[]; colon: string }) 
       <ul key={index} className={styles.bullets}>
         {group.items.map((item, itemIndex) => (
           <li key={itemIndex} className={styles.bullet}>
-            <Text value={item.text} />
+            <span>
+              <Text value={item.text} />
+            </span>
           </li>
         ))}
       </ul>

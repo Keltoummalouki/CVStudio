@@ -692,7 +692,10 @@
       "deleted": "“{name}” deleted",
       "deleteTitle": "Delete “{name}”?",
       "deleteDescription": "The CV disappears from your lists. Your career data and templates are not affected.",
-      "renameHint": "Click to rename this CV"
+      "renameHint": "Click to rename this CV",
+      "downloadLabel": "Download PDF",
+      "preparing": "Preparing…",
+      "exportBlocked": "{count, plural, one {Translate # text} other {Translate # texts}} before printing or exporting."
     },
     "conflict": {
       "message": "This CV was changed in another tab or device. Your latest edits are not saved.",
@@ -713,6 +716,28 @@
     },
     "workspace": {
       "headerHint": "Make your first impression. Choose the profile details to show on this CV."
+    }
+  },
+  "cvExport": {
+    "print": "Print",
+    "download": "Download PDF",
+    "preparing": "Preparing PDF…",
+    "backToEditor": "Back to editor",
+    "loadingPrint": "Preparing your CV…",
+    "printHint": "In the print dialog, keep A4, scale 100% and default margins, and turn off headers and footers. To keep a file, choose “Save as PDF”, or use Download PDF.",
+    "popupBlocked": "Your browser blocked the print tab. Allow pop-ups for this site and try again.",
+    "downloaded": "PDF downloaded",
+    "errors": {
+      "unauthorized": "Your session has expired. Sign in again, then retry.",
+      "not_found": "This CV no longer exists.",
+      "missing_translations": "{count, plural, one {Translate # text} other {Translate # texts}} before exporting this CV.",
+      "rate_limited": "Several PDFs were just created. Wait a minute and try again.",
+      "unavailable": "The PDF couldn’t be created. Try again, or use Print and “Save as PDF”."
+    },
+    "blocked": {
+      "title": "This CV can’t be printed yet",
+      "description": "{count, plural, one {# text is} other {# texts are}} not written in {language} yet. Translate them in your career data, reword them for this CV, or hide them.",
+      "action": "Open in the editor"
     }
   },
   "templates": {

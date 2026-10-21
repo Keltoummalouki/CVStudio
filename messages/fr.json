@@ -692,7 +692,10 @@
       "deleted": "« {name} » supprimé",
       "deleteTitle": "Supprimer « {name} » ?",
       "deleteDescription": "Le CV disparaît de vos listes. Vos données de carrière et vos modèles ne sont pas touchés.",
-      "renameHint": "Cliquez pour renommer ce CV"
+      "renameHint": "Cliquez pour renommer ce CV",
+      "downloadLabel": "Télécharger le PDF",
+      "preparing": "Préparation…",
+      "exportBlocked": "{count, plural, one {Traduisez # texte} other {Traduisez # textes}} avant d’imprimer ou d’exporter."
     },
     "conflict": {
       "message": "Ce CV a été modifié dans un autre onglet ou appareil. Vos dernières modifications ne sont pas enregistrées.",
@@ -713,6 +716,28 @@
     },
     "workspace": {
       "headerHint": "Soignez votre première impression. Choisissez les informations du profil à afficher sur ce CV."
+    }
+  },
+  "cvExport": {
+    "print": "Imprimer",
+    "download": "Télécharger le PDF",
+    "preparing": "Préparation du PDF…",
+    "backToEditor": "Retour à l’éditeur",
+    "loadingPrint": "Préparation de votre CV…",
+    "printHint": "Dans la fenêtre d’impression, gardez A4, l’échelle 100 % et les marges par défaut, et désactivez les en-têtes et pieds de page. Pour garder un fichier, choisissez « Enregistrer au format PDF », ou utilisez Télécharger le PDF.",
+    "popupBlocked": "Votre navigateur a bloqué l’onglet d’impression. Autorisez les fenêtres pour ce site, puis réessayez.",
+    "downloaded": "PDF téléchargé",
+    "errors": {
+      "unauthorized": "Votre session a expiré. Reconnectez-vous, puis réessayez.",
+      "not_found": "Ce CV n’existe plus.",
+      "missing_translations": "{count, plural, one {Traduisez # texte} other {Traduisez # textes}} avant d’exporter ce CV.",
+      "rate_limited": "Plusieurs PDF viennent d’être créés. Patientez une minute, puis réessayez.",
+      "unavailable": "Le PDF n’a pas pu être créé. Réessayez, ou utilisez Imprimer puis « Enregistrer au format PDF »."
+    },
+    "blocked": {
+      "title": "Ce CV ne peut pas encore être imprimé",
+      "description": "{count, plural, one {# texte n’est pas encore rédigé} other {# textes ne sont pas encore rédigés}} en {language}. Traduisez-les dans vos données de carrière, reformulez-les pour ce CV, ou masquez-les.",
+      "action": "Ouvrir dans l’éditeur"
     }
   },
   "templates": {

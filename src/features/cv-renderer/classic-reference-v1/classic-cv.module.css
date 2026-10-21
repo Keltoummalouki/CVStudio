@@ -204,20 +204,25 @@
   list-style: none;
 }
 
+/*
+ * The dot takes the first grid column; the text (one span) the second. Never
+ * position the dot: CSS paints positioned boxes after all other content, and
+ * the PDF keeps that paint order as its text order, so every bullet would read
+ * last in copy-paste and ATS parsers instead of under its entry.
+ */
 .bullet {
-  position: relative;
-  padding-left: 5.9mm;
+  display: grid;
+  grid-template-columns: 5.9mm minmax(0, 1fr);
+  align-items: start;
   overflow-wrap: anywhere;
   break-inside: avoid;
 }
 
 .bullet::before {
   content: "";
-  position: absolute;
-  top: 2.4mm;
-  left: 2.4mm;
   width: 1.2mm;
   height: 1.2mm;
+  margin: 2.4mm 0 0 2.4mm;
   border-radius: 50%;
   background: currentColor;
 }
@@ -290,10 +295,14 @@
 }
 
 @media print {
+  /*
+   * The @page rules (layout.ts printPageCss) give later pages their top margin
+   * and every page its bottom margin; the sheet keeps its side and first-top padding.
+   */
   .page {
     width: auto;
     min-height: 0;
-    padding: 0;
+    padding-bottom: 0;
   }
 
   .missing {
