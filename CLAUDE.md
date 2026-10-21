@@ -1,7 +1,7 @@
 # CLAUDE.md — CVStudio
 
 > Coding-agent operating instructions. Read this file and `README.md` before planning or changing code.
-> Status: **Phases 1–4 implemented** (foundation, owner auth + RLS migrations, career-data CRUD, CV Builder with live A4 preview), plus print and PDF download, verified locally only: the Vercel PDF path is untested. Saved templates (presets) are not implemented yet.
+> Status: **Phases 1–4 implemented** (foundation, owner auth + RLS migrations, career-data CRUD, CV Builder with live A4 preview), plus saved templates (presets, copy-on-apply) and print/PDF download. PDF is verified locally only: the Vercel PDF path is untested. Hardening is next.
 
 ## 1. Product mission
 

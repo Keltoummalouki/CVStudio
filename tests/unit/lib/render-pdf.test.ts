@@ -96,6 +96,20 @@ describe("renderPdf", () => {
     });
   });
 
+  it("says why the packaged Chromium did not start, without the long call log", async () => {
+    vi.stubEnv("VERCEL", "1");
+    launch.mockRejectedValueOnce(
+      new Error("browserType.launch: Failed to launch the browser process\nCall log:\n  - spawn"),
+    );
+
+    const attempt = renderPdf({ url: PRINT_URL, cookies: [] });
+
+    await expect(attempt).rejects.toBeInstanceOf(PdfRenderError);
+    await expect(attempt).rejects.toThrow(
+      /^The packaged Chromium did not start: browserType\.launch: Failed to launch the browser process$/,
+    );
+  });
+
   it("sends the session cookies to the print page's origin only, then closes the browser", async () => {
     const { browser, context } = fakeBrowser();
     launch.mockResolvedValueOnce(browser);

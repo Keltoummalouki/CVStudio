@@ -2,7 +2,7 @@
 
 > **Your career information, organized once. Your CV, customized any time.**
 
-**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus print and PDF download, verified locally but not yet on Vercel. Saved templates are **planned**, not yet implemented; see [Development and setup](#development-and-setup).
+**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus saved templates and print/PDF download. PDF download is verified locally but not yet on Vercel; hardening is next. See [Development and setup](#development-and-setup).
 
 ## Overview
 
@@ -249,7 +249,7 @@ CVs contain private personal information. Security is mandatory:
 
 ## Development and setup
 
-**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing); the PDF path on Vercel is not verified yet. Saved templates follow; see the roadmap below.
+**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing); the PDF path on Vercel is not verified yet. Saved templates are implemented too: save a CV's setup as a new template or over an existing one (after a warning), list them with how many CVs came from each, edit them in the same builder, duplicate, delete with undo, and start new CVs from one. Hardening follows; see the roadmap below.
 
 ### Prerequisites
 
@@ -359,6 +359,7 @@ A CV stores a versioned, Zod-validated `definition` (`src/features/cv-builder/de
 - **Missing translations** are listed per CV ("Before you export"). They are shown in the preview, marked, and will block print and PDF export (Phase 6). They are resolved by translating in career data, rewording for the CV, or hiding the item.
 - **Resolution** is one pure function (`src/features/cv-builder/resolve.ts`) shared by the live preview and the future print/PDF route; the renderer (`src/features/cv-renderer/classic-reference-v1`) is purely presentational, with CSS-module styles in physical units isolated from the dashboard.
 - **Saving:** the builder autosaves (debounced) with the document `revision`; a write from another tab or device is reported as a conflict (keep mine / load theirs) instead of being overwritten. Deleted CVs are kept (soft delete) so the deletion can be undone.
+- **Templates** (`src/features/cv-templates`) hold the same `definition` plus a name, description and language, and are edited with the same builder. They are copy-on-apply: a CV started from a template gets its own copy of the definition and only records the template's id and name as provenance (no foreign key), so editing, replacing or deleting a template never changes existing CVs. Like CVs, templates read live career data; entries added after a template was saved are not selected in CVs made from it.
 
 ### Security model (Phase 2)
 

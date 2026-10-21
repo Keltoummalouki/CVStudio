@@ -8,6 +8,10 @@ export class PdfRenderError extends Error {
 /** Set by the print page (PrintReady) once fonts and images are loaded. */
 const READY_ATTRIBUTE = "data-print-ready";
 
+/** Launch errors carry long call logs; their first line names the problem. */
+const firstLine = (error: unknown) =>
+  (error instanceof Error ? error.message : String(error)).split("\n", 1)[0]?.slice(0, 300) ?? "";
+
 /**
  * Locally, in order: Playwright's own Chromium (`pnpm exec playwright install
  * chromium`), then the Chrome or Edge already installed on the machine, so PDF
@@ -22,12 +26,19 @@ const LOCAL_CHANNELS = [undefined, "chrome", "msedge"] as const;
 async function launchBrowser(): Promise<Browser> {
   const { chromium } = await import("playwright-core");
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-    const { default: serverlessChromium } = await import("@sparticuz/chromium");
-    return chromium.launch({
-      args: serverlessChromium.args,
-      executablePath: await serverlessChromium.executablePath(),
-      headless: true,
-    });
+    try {
+      const { default: serverlessChromium } = await import("@sparticuz/chromium");
+      return await chromium.launch({
+        args: serverlessChromium.args,
+        executablePath: await serverlessChromium.executablePath(),
+        headless: true,
+      });
+    } catch (error) {
+      // The server log shows this message: say what failed (e.g. missing packaged files).
+      throw new PdfRenderError(`The packaged Chromium did not start: ${firstLine(error)}`, {
+        cause: error,
+      });
+    }
   }
   if (process.env.PDF_CHROMIUM_PATH) {
     return chromium.launch({ headless: true, executablePath: process.env.PDF_CHROMIUM_PATH });

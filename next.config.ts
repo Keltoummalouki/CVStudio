@@ -47,8 +47,13 @@ const nextConfig: NextConfig = {
   },
   // The serverless Chromium used for PDF export ships as compressed files that
   // are read at runtime, not imported, so the bundle tracer must be told.
+  // Keys are picomatch globs over the route path, where "[cvId]" would be a
+  // character class, hence "*". The package reads its files next to its real
+  // location, which pnpm keeps under node_modules/.pnpm.
   outputFileTracingIncludes: {
-    "/api/cvs/[cvId]/pdf": ["./node_modules/@sparticuz/chromium/bin/**"],
+    "/api/cvs/*/pdf": [
+      "./node_modules/.pnpm/@sparticuz+chromium@*/node_modules/@sparticuz/chromium/bin/**",
+    ],
   },
   turbopack: {
     rules: {

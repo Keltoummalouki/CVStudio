@@ -1,4 +1,6 @@
+import { existsSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { expect, request as playwrightRequest, test, type Page } from "@playwright/test";
 import { BUILDER_STORAGE_STATE, OWNER_STORAGE_STATE } from "./support/accounts";
 import { readPdfText } from "./support/pdf-text";
@@ -22,6 +24,30 @@ async function createCv(page: Page, name: string, language: "English" | "French"
 
 test.describe("CV export", () => {
   test.skip(({ isMobile }) => isMobile, "Export flows run on the desktop project.");
+
+  test("the PDF route's server bundle includes the packaged Chromium", async () => {
+    // Serverless hosts ship each route with the files its build trace lists. The
+    // packaged Chromium is read at runtime, not imported, so only next.config's
+    // outputFileTracingIncludes adds it; without it PDF export fails in production.
+    const root = path.resolve(__dirname, "../..");
+    const routeDir = path.join(root, ".next/server/app/api/cvs/[cvId]/pdf");
+    const trace = JSON.parse(await readFile(path.join(routeDir, "route.js.nft.json"), "utf8")) as {
+      files: string[];
+    };
+    const canonical = (file: string) => {
+      const resolved = existsSync(file) ? realpathSync(file) : file;
+      return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+    };
+    const shipped = new Set(trace.files.map((file) => canonical(path.resolve(routeDir, file))));
+    // Where @sparticuz/chromium looks: beside its own, real module files.
+    const binDir = path.join(
+      realpathSync(path.join(root, "node_modules/@sparticuz/chromium")),
+      "bin",
+    );
+    for (const file of ["chromium.br", "fonts.tar.br", "swiftshader.tar.br", "al2023.tar.br"]) {
+      expect(shipped.has(canonical(path.join(binDir, file))), file).toBe(true);
+    }
+  });
 
   test("Print opens the CV alone on A4 and starts the print dialog", async ({ page, context }) => {
     // The real dialog would block the headless browser; record the call instead.
