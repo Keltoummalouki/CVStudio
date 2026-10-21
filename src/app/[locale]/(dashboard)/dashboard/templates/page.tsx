@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowRightIcon, CopyIcon, LayersIcon } from "lucide-react";
+import { ArrowRightIcon, FileTextIcon, LayersIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { A4SheetIllustration } from "@/components/feedback/a4-sheet-illustration";
 import { PageContainer, PageHeader, Panel, PanelHeader } from "@/components/layout/page";
@@ -13,6 +13,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { TemplateList } from "@/features/cv-templates/components/template-list";
+import { listTemplates } from "@/features/cv-templates/server/queries";
 import { Link } from "@/lib/i18n/navigation";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,36 +25,59 @@ export async function generateMetadata(): Promise<Metadata> {
 const CONCEPTS = ["cv", "template", "style"] as const;
 
 export default async function TemplatesPage() {
-  const t = await getTranslations("templates");
-  const common = await getTranslations("common");
+  const [t, templates] = await Promise.all([getTranslations("templates"), listTemplates()]);
 
   return (
     <PageContainer>
       <PageHeader title={t("title")} description={t("description")} />
 
-      <div className="grid items-start gap-5 lg:grid-cols-12 lg:gap-6">
-        <Panel className="lg:col-span-7">
+      <Panel aria-labelledby="templates-library-title">
+        {templates.length === 0 ? (
           <Empty className="min-h-80 py-12">
             <EmptyMedia variant="icon">
               <LayersIcon />
             </EmptyMedia>
             <EmptyHeader>
-              <Badge variant="secondary" className="mx-auto mb-2">
-                {common("soon")}
-              </Badge>
-              <EmptyTitle as="h2">{t("empty.title")}</EmptyTitle>
+              <EmptyTitle as="h2" id="templates-library-title">
+                {t("empty.title")}
+              </EmptyTitle>
               <EmptyDescription>{t("empty.description")}</EmptyDescription>
             </EmptyHeader>
             <EmptyContent className="justify-center">
               <Button asChild variant="default">
                 <Link href="/dashboard/cvs">
-                  <CopyIcon aria-hidden="true" />
+                  <FileTextIcon aria-hidden="true" />
                   {t("empty.goToCvs")}
                   <ArrowRightIcon aria-hidden="true" />
                 </Link>
               </Button>
             </EmptyContent>
           </Empty>
+        ) : (
+          <>
+            <PanelHeader
+              titleId="templates-library-title"
+              title={t("library.title")}
+              description={t("library.howToAdd")}
+            />
+            <TemplateList templates={templates} />
+          </>
+        )}
+      </Panel>
+
+      <div className="grid items-start gap-5 lg:grid-cols-12 lg:gap-6">
+        <Panel aria-labelledby="concepts-title" className="lg:col-span-7">
+          <PanelHeader titleId="concepts-title" title={t("concepts.title")} />
+          <dl className="grid gap-px overflow-hidden rounded-b-lg bg-border sm:grid-cols-3 lg:grid-cols-1">
+            {CONCEPTS.map((concept) => (
+              <div key={concept} className="space-y-1 bg-card px-5 py-4">
+                <dt className="text-sm font-semibold">{t(`concepts.${concept}.term`)}</dt>
+                <dd className="text-[0.8125rem]/relaxed text-muted-foreground">
+                  {t(`concepts.${concept}.definition`)}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </Panel>
 
         <Panel aria-labelledby="visual-style-title" className="lg:col-span-5">
@@ -81,20 +106,6 @@ export default async function TemplatesPage() {
           </div>
         </Panel>
       </div>
-
-      <Panel aria-labelledby="concepts-title">
-        <PanelHeader titleId="concepts-title" title={t("concepts.title")} />
-        <dl className="grid gap-px overflow-hidden rounded-b-lg bg-border sm:grid-cols-3">
-          {CONCEPTS.map((concept) => (
-            <div key={concept} className="space-y-1 bg-card px-5 py-4">
-              <dt className="text-sm font-semibold">{t(`concepts.${concept}.term`)}</dt>
-              <dd className="text-[0.8125rem]/relaxed text-muted-foreground">
-                {t(`concepts.${concept}.definition`)}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </Panel>
     </PageContainer>
   );
 }

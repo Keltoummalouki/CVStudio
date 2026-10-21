@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { createDefaultDefinition } from "@/features/cv-builder/defaults";
+import { definitionSchema, type CvDefinition } from "@/features/cv-builder/definition";
 import { loadMasterData } from "@/features/cv-builder/server/load-master-data";
 import { fail, issuesFromZod, mapDatabaseError, ok, type ActionResult } from "@/lib/actions/result";
 import { getOwnerContext } from "@/lib/auth/session";
@@ -11,28 +12,55 @@ import { cvNameSchema, createCvSchema, saveCvSchema } from "../schemas";
 
 const idSchema = z.uuid();
 
-/** Creates a CV from all active career data, in the reference section order. */
+/**
+ * Creates a CV from all active career data in the reference section order, or
+ * from a copy of a template's setup. The copy is independent: editing or
+ * deleting the template later never changes this CV.
+ */
 export async function createCv(input: unknown): Promise<ActionResult<{ id: string }>> {
   const context = await getOwnerContext();
   if (!context) return fail("unauthorized");
   const parsed = createCvSchema.safeParse(input);
   if (!parsed.success) return fail("invalid_input", issuesFromZod(parsed.error));
+  const { supabase, owner } = context;
 
-  let definition;
-  try {
-    definition = createDefaultDefinition(await loadMasterData(context));
-  } catch {
-    return fail("unavailable");
+  let definition: CvDefinition;
+  let provenance: { created_from_template_id: string; created_from_template_name: string } | null =
+    null;
+  if (parsed.data.templateId) {
+    const template = await supabase
+      .from("cv_templates")
+      .select("id, name, definition")
+      .eq("owner_id", owner.id)
+      .eq("id", parsed.data.templateId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (template.error) return fail("unavailable");
+    if (!template.data) return fail("not_found");
+    const copied = definitionSchema.safeParse(template.data.definition);
+    if (!copied.success) return fail("invalid_input");
+    definition = copied.data;
+    provenance = {
+      created_from_template_id: template.data.id,
+      created_from_template_name: template.data.name,
+    };
+  } else {
+    try {
+      definition = createDefaultDefinition(await loadMasterData(context));
+    } catch {
+      return fail("unavailable");
+    }
   }
 
-  const { data, error } = await context.supabase
+  const { data, error } = await supabase
     .from("cv_documents")
     .insert({
-      owner_id: context.owner.id,
+      owner_id: owner.id,
       name: parsed.data.name,
       locale: parsed.data.locale,
       schema_version: definition.schemaVersion,
       definition: asJsonObject(definition),
+      ...provenance,
     })
     .select("id")
     .single();

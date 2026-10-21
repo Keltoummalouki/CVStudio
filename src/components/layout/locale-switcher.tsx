@@ -6,12 +6,16 @@ import { LOCALES, LOCALE_ENDONYMS } from "@/lib/i18n/config";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 
-type LocaleSwitcherProps = {
-  tone?: "default" | "rail";
+type SwitcherPresentation = {
+  tone: "default" | "rail";
+  labels: "codes" | "names";
+};
+
+type LocaleSwitcherProps = Partial<SwitcherPresentation> & {
   className?: string;
 };
 
-function SwitcherLinks({ tone, pathname }: { tone: "default" | "rail"; pathname: string }) {
+function SwitcherLinks({ tone, labels, pathname }: SwitcherPresentation & { pathname: string }) {
   const t = useTranslations("localeSwitcher");
   const activeLocale = useLocale();
 
@@ -41,13 +45,20 @@ function SwitcherLinks({ tone, pathname }: { tone: "default" | "rail"; pathname:
               title={isActive ? undefined : t("switchTo", { language: LOCALE_ENDONYMS[locale] })}
               className={cn(
                 "flex h-8 min-w-11 items-center justify-center px-2.5 transition-colors duration-(--duration-fast) focus-visible:-outline-offset-2 pointer-coarse:h-11",
+                labels === "names" && "h-10 font-medium tracking-normal",
                 tone === "rail"
                   ? "text-rail-muted hover:bg-rail-hover hover:text-rail-foreground aria-[current=true]:bg-paper aria-[current=true]:text-ink-950"
                   : "bg-card text-muted-foreground hover:bg-ink-100 hover:text-foreground aria-[current=true]:bg-ink-950 aria-[current=true]:text-paper",
               )}
             >
-              <span aria-hidden="true">{locale.toUpperCase()}</span>
-              <span className="sr-only">{LOCALE_ENDONYMS[locale]}</span>
+              {labels === "names" ? (
+                LOCALE_ENDONYMS[locale]
+              ) : (
+                <>
+                  <span aria-hidden="true">{locale.toUpperCase()}</span>
+                  <span className="sr-only">{LOCALE_ENDONYMS[locale]}</span>
+                </>
+              )}
             </Link>
           </li>
         );
@@ -60,7 +71,7 @@ function SwitcherLinks({ tone, pathname }: { tone: "default" | "rail"; pathname:
  * Shown only in a prerendered shell before the current path is known: same
  * look, but inert, so an early click can never send the owner to another page.
  */
-function PendingSwitcher({ tone }: { tone: "default" | "rail" }) {
+function PendingSwitcher({ tone, labels }: SwitcherPresentation) {
   const activeLocale = useLocale();
   return (
     <ul
@@ -75,6 +86,7 @@ function PendingSwitcher({ tone }: { tone: "default" | "rail" }) {
           key={locale}
           className={cn(
             "flex h-8 min-w-11 items-center justify-center px-2.5 pointer-coarse:h-11",
+            labels === "names" && "h-10 font-medium tracking-normal",
             index > 0 && "border-l",
             tone === "rail"
               ? "border-rail-border text-rail-muted"
@@ -83,15 +95,15 @@ function PendingSwitcher({ tone }: { tone: "default" | "rail" }) {
               (tone === "rail" ? "bg-paper text-ink-950" : "bg-ink-950 text-paper"),
           )}
         >
-          {locale.toUpperCase()}
+          {labels === "names" ? LOCALE_ENDONYMS[locale] : locale.toUpperCase()}
         </li>
       ))}
     </ul>
   );
 }
 
-function CurrentPageSwitcherLinks({ tone }: { tone: "default" | "rail" }) {
-  return <SwitcherLinks tone={tone} pathname={usePathname()} />;
+function CurrentPageSwitcherLinks({ tone, labels }: SwitcherPresentation) {
+  return <SwitcherLinks tone={tone} labels={labels} pathname={usePathname()} />;
 }
 
 /**
@@ -99,13 +111,17 @@ function CurrentPageSwitcherLinks({ tone }: { tone: "default" | "rail" }) {
  * Plain links, so switching works without JavaScript and keeps the current page.
  * In a prerendered shell an inert placeholder shows until the current path is known.
  */
-export function LocaleSwitcher({ tone = "default", className }: LocaleSwitcherProps) {
+export function LocaleSwitcher({
+  tone = "default",
+  labels = "codes",
+  className,
+}: LocaleSwitcherProps) {
   const t = useTranslations("localeSwitcher");
 
   return (
     <nav aria-label={t("label")} className={className}>
-      <Suspense fallback={<PendingSwitcher tone={tone} />}>
-        <CurrentPageSwitcherLinks tone={tone} />
+      <Suspense fallback={<PendingSwitcher tone={tone} labels={labels} />}>
+        <CurrentPageSwitcherLinks tone={tone} labels={labels} />
       </Suspense>
     </nav>
   );

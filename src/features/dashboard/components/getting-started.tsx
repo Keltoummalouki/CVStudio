@@ -1,10 +1,8 @@
 import { ArrowRightIcon, CheckIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { UpcomingAction } from "@/components/feedback/upcoming-action";
 import { Panel, PanelHeader } from "@/components/layout/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { isAvailable, type Capability } from "@/config/availability";
 import { NEW_CV_HREF } from "@/config/navigation";
 import { Link } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -15,11 +13,11 @@ import {
   type SetupStepState,
 } from "../overview";
 
-const STEP_TARGETS: Record<SetupStepId, { href: string; requires?: Capability }> = {
-  profile: { href: "/dashboard/content/profile" },
-  career: { href: "/dashboard/content" },
-  cv: { href: NEW_CV_HREF },
-  template: { href: "/dashboard/templates" },
+const STEP_HREFS: Record<SetupStepId, string> = {
+  profile: "/dashboard/content/profile",
+  career: "/dashboard/content",
+  cv: NEW_CV_HREF,
+  template: "/dashboard/templates",
 };
 
 function StepMarker({ position, state }: { position: number; state: SetupStepState }) {
@@ -40,15 +38,10 @@ function StepMarker({ position, state }: { position: number; state: SetupStepSta
 
 function StepAction({ id }: { id: SetupStepId }) {
   const t = useTranslations("overview.gettingStarted.actions");
-  const target = STEP_TARGETS[id];
-
-  if (target.requires && !isAvailable(target.requires)) {
-    return <UpcomingAction size="sm">{t(id)}</UpcomingAction>;
-  }
 
   return (
     <Button asChild size="sm">
-      <Link href={target.href}>
+      <Link href={STEP_HREFS[id]}>
         {t(id)}
         <ArrowRightIcon aria-hidden="true" />
       </Link>

@@ -12,9 +12,7 @@
     "notifications": "Notifications",
     "cancel": "Cancel",
     "retry": "Try again",
-    "loading": "Loading…",
-    "soon": "Soon",
-    "availableSoon": "Available in an upcoming release"
+    "loading": "Loading…"
   },
   "languages": {
     "en": "English",
@@ -430,11 +428,19 @@
       "errors": {
         "invalid_input": "Check the name and try again.",
         "stale": "Something changed in the meantime. Try again.",
-        "not_found": "That CV no longer exists.",
+        "not_found": "That template no longer exists. Choose another starting point.",
         "unauthorized": "Your session has expired. Sign in again to continue.",
         "unavailable": "The CV couldn’t be created. Check your connection and try again."
       },
-      "independent": "A separate document, built from your career data. Make it your own next."
+      "independent": "A separate document, built from your career data. Make it your own next.",
+      "startFrom": {
+        "label": "Start from",
+        "careerData": "Your career data",
+        "careerDataHint": "Every active entry, in the reference order.",
+        "templateHint": "A saved template.",
+        "templateLanguage": "Saved in {language}",
+        "templateNote": "The CV copies the template’s sections, order and wording, filled with your latest career data. Entries added since the template was saved aren’t included: add them in the CV."
+      }
     },
     "library": {
       "title": "Your documents",
@@ -669,7 +675,9 @@
         "label": "Label",
         "text": "Text"
       },
-      "allSet": "All set for this language"
+      "allSet": "All set for this language",
+      "templateTitle": "Before you use it",
+      "templateBlockingDescription": "CVs made from this template in {language} can’t be printed until these texts exist in {language}: translate them in your career data, reword them here, or hide them."
     },
     "toolbar": {
       "back": "Back to CVs",
@@ -695,7 +703,8 @@
       "renameHint": "Click to rename this CV",
       "downloadLabel": "Download PDF",
       "preparing": "Preparing…",
-      "exportBlocked": "{count, plural, one {Translate # text} other {Translate # texts}} before printing or exporting."
+      "exportBlocked": "{count, plural, one {Translate # text} other {Translate # texts}} before printing or exporting.",
+      "saveAsTemplate": "Save as template…"
     },
     "conflict": {
       "message": "This CV was changed in another tab or device. Your latest edits are not saved.",
@@ -742,10 +751,10 @@
   },
   "templates": {
     "title": "Templates",
-    "description": "Reusable CV configurations. Applying a template creates a new CV; it never changes existing ones.",
+    "description": "Reusable CV setups: sections, order, chosen entries and wording. Using one creates a new CV; it never changes existing ones.",
     "empty": {
       "title": "No templates yet",
-      "description": "Reusable presets are coming soon. For now, duplicate an existing CV to keep its selection, section order and layout settings.",
+      "description": "Open a CV and choose More actions → Save as template. A template starts new CVs with the same sections, order and wording, filled with your latest career data.",
       "goToCvs": "Go to CVs"
     },
     "concepts": {
@@ -756,7 +765,7 @@
       },
       "template": {
         "term": "Template",
-        "definition": "A saved copy of a CV’s configuration, used to start new CVs."
+        "definition": "A saved copy of a CV’s setup, used to start new CVs. It holds no career data."
       },
       "style": {
         "term": "Visual style",
@@ -768,6 +777,89 @@
       "name": "Classic",
       "description": "A4 portrait, Poppins, fine rules, two-column skills and right-aligned dates, reproduced from your reference CV.",
       "included": "Included"
+    },
+    "library": {
+      "title": "Your templates",
+      "howToAdd": "To add one, open a CV and choose More actions → Save as template."
+    },
+    "status": {
+      "unreadable": "Layout unreadable",
+      "toTranslate": "{count, plural, one {# text to translate} other {# texts to translate}}",
+      "warnings": "{count, plural, one {# warning} other {# warnings}}",
+      "ready": "Ready to use"
+    },
+    "updated": "Updated {date}",
+    "usedBy": "{count, plural, =0 {No CV made from it yet} one {Used for # CV} other {Used for # CVs}}",
+    "use": "Use template",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "moreActions": "More actions for {name}",
+    "copyName": "Copy of {name}",
+    "duplicated": "Template duplicated",
+    "deleted": "“{name}” deleted",
+    "undo": "Undo",
+    "actionFailed": "That didn’t work. Nothing was changed.",
+    "deleteTitle": "Delete “{name}”?",
+    "deleteDescription": "{count, plural, =0 {The template disappears from your lists. Your CVs and career data are not affected.} one {The template disappears from your lists. The CV made from it stays exactly as it is.} other {The template disappears from your lists. The # CVs made from it stay exactly as they are.}}",
+    "saveDialog": {
+      "title": "Save as template",
+      "description": "A template keeps this CV’s sections, order, chosen entries and wording, to start new CVs from. It stores no career data: new CVs use your latest data.",
+      "modeLabel": "Save as",
+      "modes": {
+        "new": {
+          "title": "New template",
+          "description": "Keep this setup under a new name."
+        },
+        "replace": {
+          "title": "Replace a template",
+          "description": "Update an existing template with this setup."
+        }
+      },
+      "name": "Template name",
+      "descriptionLabel": "Description",
+      "descriptionHint": "Only you see it. Note when to use this template.",
+      "replaceLabel": "Template to replace",
+      "replaceWarning": "“{name}” will get this CV’s sections, order, wording and language. Its name and description stay. CVs already made from it don’t change.",
+      "submitNew": "Save template",
+      "submitReplace": "Replace template",
+      "cancel": "Cancel",
+      "created": "Template “{name}” saved",
+      "replaced": "Template “{name}” updated",
+      "openTemplate": "Open",
+      "errors": {
+        "invalid_input": "Check the name and description, then try again.",
+        "stale": "Something changed in the meantime. Try again.",
+        "not_found": "That CV or template no longer exists.",
+        "unauthorized": "Your session has expired. Sign in again to continue.",
+        "unavailable": "The template couldn’t be saved. Check your connection and try again."
+      }
+    },
+    "editor": {
+      "back": "Back to templates",
+      "name": "Template name",
+      "renameHint": "Click to rename this template",
+      "intro": "You’re editing a template, shown with your current career data. Changes apply to CVs you create from it later, never to CVs that already exist.",
+      "descriptionLabel": "Description",
+      "descriptionHint": "Only you see it. Note when to use this template.",
+      "use": "New CV from template",
+      "duplicate": "Duplicate",
+      "delete": "Delete template",
+      "copyName": "Copy of {name}",
+      "duplicated": "Duplicated. You’re now editing the copy.",
+      "deleted": "“{name}” deleted",
+      "undo": "Undo",
+      "actionFailed": "That didn’t work. Nothing was changed.",
+      "deleteTitle": "Delete “{name}”?",
+      "deleteDescription": "The template disappears from your lists. CVs made from it stay exactly as they are.",
+      "conflict": "This template was changed in another tab or device. Your latest edits are not saved.",
+      "saveErrors": {
+        "invalid_input": "Some content is too long or invalid, so it couldn’t be saved.",
+        "stale": "This template was changed elsewhere.",
+        "not_found": "This template no longer exists. It may have been deleted in another tab.",
+        "unauthorized": "Your session has expired. Sign in again in a new tab, then retry.",
+        "unavailable": "Couldn’t save. Your edits are kept here; check your connection and retry."
+      }
     }
   },
   "settings": {
@@ -836,8 +928,6 @@
   "studio": {
     "workspace": "My workspace",
     "privateWorkspace": "Private workspace",
-    "railTitle": "A career worth keeping.",
-    "railDescription": "Keep your story in one place. Shape it for every opportunity.",
     "editProfile": "Your profile",
     "breadcrumb": "Current location",
     "editor": "Editor",

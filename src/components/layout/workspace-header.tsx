@@ -16,7 +16,9 @@ function CurrentLocation() {
   const section = CAREER_SECTIONS.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
-  const isCvEditor = pathname.startsWith("/dashboard/cvs/") && !pathname.endsWith("/new");
+  const isCvEditor =
+    (pathname.startsWith("/dashboard/cvs/") && !pathname.endsWith("/new")) ||
+    pathname.startsWith("/dashboard/templates/");
   return (
     <nav aria-label={tStudio("breadcrumb")} className="min-w-0">
       <ol className="flex min-w-0 items-center gap-2.5 text-xs">

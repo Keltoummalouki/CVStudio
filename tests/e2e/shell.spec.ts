@@ -97,6 +97,33 @@ test.describe("dashboard shell", () => {
     await expect(page.locator("#main-content")).toBeFocused();
   });
 
+  for (const locale of ["en", "fr"]) {
+    test(`${locale} sidebar controls stay reachable in a short window`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(isMobile(testInfo.project.name), "The sidebar is a desktop surface.");
+      await page.setViewportSize({ width: 1024, height: 500 });
+      await page.goto(`/${locale}/dashboard/content`);
+      const rail = page.locator("aside");
+      await expect(rail.locator('[aria-current="page"]')).toHaveCount(1);
+      await expect(rail.getByRole("link", { name: "Français", exact: true })).toBeVisible();
+
+      // Native tabbing must scroll every control into view, including the footer.
+      await page.keyboard.press("Tab"); // Skip to content.
+      for (const control of await rail.locator("a, button").all()) {
+        await page.keyboard.press("Tab");
+        await expect(control).toBeFocused();
+        await expect(control).toBeInViewport({ ratio: 1 });
+      }
+
+      const dimensions = await rail.evaluate((element) => ({
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      }));
+      expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+    });
+  }
+
   test("explains setup progress and the empty CV list without inventing content", async ({
     page,
   }) => {

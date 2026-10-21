@@ -68,10 +68,13 @@ function IssueRow({ issue, onShow }: { issue: CvIssue; onShow: () => void }) {
  * translations block printing; archived or deleted records are warnings.
  */
 export function IssuesPanel({
+  purpose,
   open,
   onOpenChange,
   onShow,
 }: {
+  /** A template exports nothing itself: its issues are a heads-up for the CVs made from it. */
+  purpose: "cv" | "template";
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onShow: (target: string) => void;
@@ -120,11 +123,15 @@ export function IssuesPanel({
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent side="right" className="w-full gap-0 sm:max-w-md">
         <SheetHeader className="gap-3 border-b p-6 pr-12">
-          <SheetTitle className="text-2xl tracking-[-0.03em]">{t("title")}</SheetTitle>
+          <SheetTitle className="text-2xl tracking-[-0.03em]">
+            {purpose === "cv" ? t("title") : t("templateTitle")}
+          </SheetTitle>
           <SheetDescription>
-            {blocking.length > 0
-              ? t("blockingDescription", { language: tLanguages(cvLocale) })
-              : t("clearDescription")}
+            {blocking.length === 0
+              ? t("clearDescription")
+              : purpose === "cv"
+                ? t("blockingDescription", { language: tLanguages(cvLocale) })
+                : t("templateBlockingDescription", { language: tLanguages(cvLocale) })}
           </SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-y-auto">

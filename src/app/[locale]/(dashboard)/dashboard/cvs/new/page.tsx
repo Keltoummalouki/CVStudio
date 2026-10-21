@@ -5,22 +5,31 @@ import { PageContainer, PageHeader, Panel } from "@/components/layout/page";
 import { Button } from "@/components/ui/button";
 import { getCareerSummary } from "@/features/career-data/server/queries";
 import { NewCvForm } from "@/features/cv-documents/components/new-cv-form";
+import { TEMPLATE_QUERY_PARAM } from "@/features/cv-templates/routes";
+import { listTemplateChoices } from "@/features/cv-templates/server/queries";
 import { isLocale } from "@/lib/i18n/config";
 import { Link } from "@/lib/i18n/navigation";
+
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("cvs.new");
   return { title: t("title") };
 }
 
-export default async function Page() {
-  const [t, summary, locale] = await Promise.all([
+export default async function Page({ searchParams }: Props) {
+  const [t, summary, locale, templates, query] = await Promise.all([
     getTranslations("cvs.new"),
     getCareerSummary(),
     getLocale(),
+    listTemplateChoices(),
+    searchParams,
   ]);
   const { profileStarted, ...counts } = summary;
   const hasRecords = Object.values(counts).some((count) => count > 0);
+  // Only an id from the owner's own list preselects anything.
+  const requested = query[TEMPLATE_QUERY_PARAM];
+  const initialTemplateId = typeof requested === "string" ? requested : null;
 
   return (
     <PageContainer className="max-w-3xl">
@@ -48,7 +57,11 @@ export default async function Page() {
         </p>
       ) : null}
       <Panel className="p-5 sm:p-6">
-        <NewCvForm defaultLocale={isLocale(locale) ? locale : "en"} />
+        <NewCvForm
+          defaultLocale={isLocale(locale) ? locale : "en"}
+          templates={templates}
+          initialTemplateId={initialTemplateId}
+        />
       </Panel>
     </PageContainer>
   );

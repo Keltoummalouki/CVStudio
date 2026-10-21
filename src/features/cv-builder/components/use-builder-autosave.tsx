@@ -5,18 +5,28 @@ import { useTranslations } from "next-intl";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import type { SaveState } from "@/components/feedback/save-status";
 import { useIsOffline } from "@/components/forms/use-save-form";
-import { getCvRevision, saveCv } from "@/features/cv-documents/server/actions";
-import type { ActionErrorCode } from "@/lib/actions/result";
+import type { ActionErrorCode, ActionResult } from "@/lib/actions/result";
 import { splitLocalePath } from "@/lib/auth/routes";
 import type { Locale } from "@/lib/i18n/config";
 import { useRouter } from "@/lib/i18n/navigation";
 import type { CvDefinition } from "../definition";
 
-export type CvDraft = { name: string; locale: Locale; definition: CvDefinition };
+/** What the builder edits, for a CV or a template. */
+export type BuilderDraft = { name: string; locale: Locale; definition: CvDefinition };
 
 const SAVE_DELAY_MS = 700;
 
-type Options = { id: string; revision: number; draft: CvDraft };
+type Options<D extends BuilderDraft> = {
+  id: string;
+  revision: number;
+  draft: D;
+  /** Server action writing the draft at the expected revision. */
+  save: (
+    input: D & { id: string; expectedRevision: number },
+  ) => Promise<ActionResult<{ revision: number }>>;
+  /** Server action reading the latest revision, to keep this tab's edits after a conflict. */
+  getRevision: (id: string) => Promise<ActionResult<{ revision: number }>>;
+};
 
 /**
  * Debounced autosave for the builder. Writes are serialized and carry the
@@ -24,7 +34,13 @@ type Options = { id: string; revision: number; draft: CvDraft };
  * conflict instead of being overwritten. Leaving the page first flushes
  * pending edits, and only asks when they could not be saved.
  */
-export function useCvAutosave({ id, revision, draft }: Options) {
+export function useBuilderAutosave<D extends BuilderDraft>({
+  id,
+  revision,
+  draft,
+  save,
+  getRevision,
+}: Options<D>) {
   const t = useTranslations("cvBuilder.leave");
   const router = useRouter();
   const offline = useIsOffline();
@@ -58,7 +74,7 @@ export function useCvAutosave({ id, revision, draft }: Options) {
     const attempt = (async () => {
       setSaving(true);
       try {
-        const result = await saveCv({ id, expectedRevision: revisionRef.current, ...current });
+        const result = await save({ ...current, id, expectedRevision: revisionRef.current });
         if (result.ok) {
           revisionRef.current = result.data.revision;
           savedRef.current = currentSnapshot;
@@ -83,7 +99,7 @@ export function useCvAutosave({ id, revision, draft }: Options) {
     } finally {
       inFlight.current = null;
     }
-  }, [id]);
+  }, [id, save]);
 
   // Edits made during a save keep `dirty` true, so this schedules the next write.
   const blocked = conflict || offline || failure?.snapshot === snapshot;
@@ -100,7 +116,7 @@ export function useCvAutosave({ id, revision, draft }: Options) {
 
   /** After a conflict: keep this tab's version and save it over the newer one. */
   const keepMine = useCallback(async () => {
-    const latestRevision = await getCvRevision(id);
+    const latestRevision = await getRevision(id);
     if (!latestRevision.ok) {
       setFailure({ snapshot: latest.current.snapshot, error: latestRevision.error });
       return;
@@ -109,7 +125,7 @@ export function useCvAutosave({ id, revision, draft }: Options) {
     setConflict(false);
     setFailure(null);
     await run();
-  }, [id, run]);
+  }, [id, run, getRevision]);
 
   /** After a conflict: drop this tab's edits and show what was saved elsewhere. */
   const loadLatest = useCallback(() => {

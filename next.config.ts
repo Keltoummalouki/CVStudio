@@ -38,6 +38,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  devIndicators: { position: "bottom-right" },
   experimental: {
     serverActions: {
       // Profile photos are capped at 5 MiB; leave room for multipart overhead.

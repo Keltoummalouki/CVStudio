@@ -12,7 +12,12 @@ export const cvNameSchema = z
 
 export const cvLocaleSchema = z.enum(LOCALES);
 
-export const createCvSchema = z.object({ name: cvNameSchema, locale: cvLocaleSchema });
+export const createCvSchema = z.object({
+  name: cvNameSchema,
+  locale: cvLocaleSchema,
+  /** Start from a saved template's setup instead of all career data. */
+  templateId: z.uuid().optional(),
+});
 export type CreateCvValues = z.infer<typeof createCvSchema>;
 
 export const saveCvSchema = z.object({

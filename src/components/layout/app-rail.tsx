@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
-import { ArrowUpRightIcon, LockKeyholeIcon } from "lucide-react";
+import { Fragment, Suspense } from "react";
+import { ArrowRightIcon, LockKeyholeIcon, UserRoundIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { DASHBOARD_HOME, PRIMARY_NAVIGATION, isNavigationItemActive } from "@/config/navigation";
@@ -9,46 +9,60 @@ import { Link, usePathname } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { LocaleSwitcher } from "./locale-switcher";
 
+const railLinkClassName = cn(
+  "group flex min-h-11 items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-rail-muted",
+  "transition-colors duration-(--duration-fast) hover:bg-rail-hover hover:text-rail-foreground",
+  "focus-visible:-outline-offset-2 aria-[current=page]:bg-rail-active aria-[current=page]:text-rail-foreground",
+);
+
 /** `pathname` is null in the prerendered shell; the active marker streams in. */
 function RailLinks({ pathname }: { pathname: string | null }) {
   const t = useTranslations("navigation");
+  const tStudio = useTranslations("studio");
 
   return (
-    <ul className="flex min-h-full flex-col gap-2">
+    <ul className="flex flex-1 flex-col gap-1">
       {PRIMARY_NAVIGATION.map((item) => {
         const active = pathname !== null && isNavigationItemActive(item, pathname);
         const Icon = item.icon;
         return (
-          <li
-            key={item.id}
-            className={cn(
-              "shrink-0",
-              item.id === "settings" && "mt-auto border-t border-rail-border pt-3",
-            )}
-          >
-            <Link
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "group flex h-11 items-center gap-3 rounded-md px-3.5 text-sm font-medium text-rail-muted",
-                "transition-colors duration-(--duration-fast) hover:bg-rail-hover hover:text-rail-foreground",
-                "aria-[current=page]:bg-rail-active aria-[current=page]:text-rail-foreground",
-              )}
-            >
-              <Icon
-                aria-hidden="true"
-                className="size-[1.125rem] shrink-0"
-                strokeWidth={active ? 2 : 1.65}
-              />
-              <span className="truncate">{t(item.id)}</span>
-              {active ? (
-                <span
+          <Fragment key={item.id}>
+            {item.id === "settings" ? (
+              <li className="mt-auto shrink-0 pt-8">
+                <div className="border-t border-rail-border pt-3">
+                  <Link href="/dashboard/content/profile" className={railLinkClassName}>
+                    <UserRoundIcon
+                      aria-hidden="true"
+                      className="size-[1.125rem] shrink-0"
+                      strokeWidth={1.65}
+                    />
+                    <span className="min-w-0 flex-1">{tStudio("editProfile")}</span>
+                    <ArrowRightIcon
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0 text-rail-muted"
+                    />
+                  </Link>
+                </div>
+              </li>
+            ) : null}
+            <li className="shrink-0">
+              <Link
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={railLinkClassName}
+              >
+                <Icon
                   aria-hidden="true"
-                  className="ml-auto size-1.5 shrink-0 rounded-full bg-signal"
+                  className="size-[1.125rem] shrink-0"
+                  strokeWidth={active ? 2 : 1.65}
                 />
-              ) : null}
-            </Link>
-          </li>
+                <span className="min-w-0 flex-1">{t(item.id)}</span>
+                {active ? (
+                  <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-signal" />
+                ) : null}
+              </Link>
+            </li>
+          </Fragment>
         );
       })}
     </ul>
@@ -66,45 +80,36 @@ export function AppRail({ newCvAction }: { newCvAction: React.ReactNode }) {
   const tStudio = useTranslations("studio");
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-(--rail-width) flex-col bg-rail text-rail-foreground lg:flex">
-      <div className="flex h-24 shrink-0 items-center px-6">
-        <Link
-          href={DASHBOARD_HOME}
-          aria-label={t("home")}
-          className="flex items-center rounded-sm focus-visible:outline-offset-4 pointer-coarse:min-h-11"
-        >
-          <BrandMark tone="rail" wordmarkClassName="text-xl" />
-        </Link>
-      </div>
-
-      <div className="shrink-0 px-4 pb-6">{newCvAction}</div>
-
-      <nav aria-label={t("label")} className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-        <Suspense fallback={<RailLinks pathname={null} />}>
-          <CurrentRailLinks />
-        </Suspense>
-      </nav>
-
-      <div className="mx-4 mb-4 hidden shrink-0 space-y-3 rounded-lg border border-rail-border p-4 [@media(min-height:760px)]:block">
-        <p className="text-sm font-medium">{tStudio("railTitle")}</p>
-        <p className="text-xs/relaxed text-rail-muted">{tStudio("railDescription")}</p>
-        <Link
-          href="/dashboard/content/profile"
-          className="inline-flex min-h-8 items-center gap-2 rounded-sm text-xs font-medium text-rail-foreground hover:underline"
-        >
-          {tStudio("editProfile")}
-          <ArrowUpRightIcon aria-hidden="true" className="size-3.5" />
-        </Link>
-      </div>
-      <div className="shrink-0 space-y-3 border-t border-rail-border px-5 py-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-rail-muted">{tSwitcher("label")}</p>
-          <LocaleSwitcher tone="rail" />
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-(--rail-width) overflow-x-hidden overflow-y-auto overscroll-contain border-r border-rail-border bg-rail text-rail-foreground [color-scheme:dark] lg:block">
+      <div className="flex min-h-full flex-col px-4 pt-7 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <div className="shrink-0 px-3">
+          <Link
+            href={DASHBOARD_HOME}
+            aria-label={t("home")}
+            className="flex items-center rounded-sm focus-visible:outline-offset-4 pointer-coarse:min-h-11"
+          >
+            <BrandMark tone="rail" wordmarkClassName="text-xl" />
+          </Link>
+          <p className="mt-3 flex items-center gap-2 text-xs text-rail-muted">
+            <LockKeyholeIcon aria-hidden="true" className="size-3 shrink-0" />
+            {tStudio("privateWorkspace")}
+          </p>
         </div>
-        <p className="flex items-center gap-2 text-xs text-rail-muted">
-          <LockKeyholeIcon aria-hidden="true" className="size-3" />
-          {tStudio("privateWorkspace")}
-        </p>
+
+        <div className="shrink-0 pt-6 pb-5">{newCvAction}</div>
+
+        <nav aria-label={t("label")} className="flex flex-1 flex-col">
+          <Suspense fallback={<RailLinks pathname={null} />}>
+            <CurrentRailLinks />
+          </Suspense>
+        </nav>
+
+        <div className="mt-4 shrink-0 space-y-2.5 border-t border-rail-border pt-4">
+          <div className="px-3">
+            <p className="text-xs text-rail-muted">{tSwitcher("label")}</p>
+          </div>
+          <LocaleSwitcher tone="rail" labels="names" />
+        </div>
       </div>
     </aside>
   );
