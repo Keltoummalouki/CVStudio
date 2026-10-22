@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { PRINT_READY_ATTRIBUTE } from "@/lib/page-markers";
 
 /**
  * Marks the print page ready once fonts and the portrait have loaded, so the
@@ -20,13 +21,13 @@ export function PrintReady({ autoPrint = false }: { autoPrint?: boolean }) {
         ),
       );
       if (cancelled) return;
-      root.dataset.printReady = "true";
+      root.setAttribute(PRINT_READY_ATTRIBUTE, "true");
       if (autoPrint) window.print();
     })();
 
     return () => {
       cancelled = true;
-      delete root.dataset.printReady;
+      root.removeAttribute(PRINT_READY_ATTRIBUTE);
     };
   }, [autoPrint]);
 

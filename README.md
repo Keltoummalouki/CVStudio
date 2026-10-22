@@ -315,6 +315,7 @@ Environment variables (see `.env.example`):
 | `pnpm typecheck` | Generates route types, then runs `tsc --noEmit` |
 | `pnpm format` / `pnpm format:check` | Prettier with Tailwind class sorting |
 | `pnpm test` | Vitest unit and component tests (jsdom) |
+| `pnpm test:coverage` | The same tests with V8 coverage; fails below the thresholds in `vitest.config.mts`. HTML report in `coverage/index.html` |
 | `pnpm test:db` | Database integration tests (RLS per table, cross-owner isolation, storage, constraints) against the **local** stack only |
 | `pnpm test:e2e` | Playwright on desktop and mobile Chromium against a fresh production build wired to the local stack (login flows, navigation, career data, CV builder, cross-owner access, axe WCAG 2.2 AA). A second allowlisted test owner with a seeded, generic career profile isolates the builder flows. First run: `pnpm exec playwright install chromium` |
 | `pnpm check` | format check, lint, typecheck and unit tests |
@@ -323,6 +324,29 @@ Environment variables (see `.env.example`):
 | `pnpm clean` | Removes `.next` (also works when OneDrive has turned it into read-only placeholders) |
 
 Database and end-to-end tests refuse to run against anything but `127.0.0.1`/`localhost`, and only create disposable `@cvstudio.test` accounts.
+
+### Continuous integration and deployment
+
+**CI** (`.github/workflows/ci.yml`) runs on every pull request and every push to `main`. It needs no secret and never touches a hosted Supabase project, so pull requests from forks run the same checks safely.
+
+| Check | What it runs |
+| --- | --- |
+| `Lint & types` | `pnpm format:check`, `pnpm lint`, `pnpm typecheck` |
+| `Unit tests` | `pnpm test:coverage`; coverage table in the run summary, HTML report in the `coverage` artifact |
+| `Database tests` | A disposable local Supabase stack on the runner, then `pnpm test:db` |
+| `E2E tests` | Playwright's Chromium and the local stack, then `pnpm test:e2e`; report and traces uploaded when a test fails. Then `scripts/check-pdf-bundle.mjs` renders a PDF from only the files the PDF route's serverless bundle ships, with the packaged Chromium, as Vercel runs it |
+| `CI passed` | Succeeds only when all four succeed: the one check to require in GitHub and Vercel |
+
+**Coverage** covers `src/` except route shells (pages, layouts, loading and error boundaries, rendered by the end-to-end tests), the generated shadcn/ui primitives and generated types. The thresholds in `vitest.config.mts` sit just under the measured coverage: 80% of statements overall, and 95–100% for Server Actions and queries, the PDF route and the auth layer. Raise them as tests are added; never lower them to make a change pass.
+
+**Deployment** stays with Vercel's Git integration: pushes to `main` deploy to production and pull requests get preview deployments. To release only commits that passed CI (one-time setup):
+
+1. Vercel → Project → Settings → Build and Deployment → **Deployment Checks** → Add Checks → GitHub → select **CI passed**. Production builds still start on every push, but replace the live site only once CI passed on that commit. *Force Promote* on a deployment overrides it in an emergency.
+2. GitHub → Settings → Rules → Rulesets: target `main`, require a pull request and the **CI passed** status check.
+
+**Database migrations** are never applied automatically. Run **Database migrations** from the Actions tab: by default it only lists the pending migrations; tick *Apply* to apply them (from `main` only). One-time setup in GitHub → Settings → Environments → `production`: secrets `SUPABASE_ACCESS_TOKEN` (a Supabase access token) and `SUPABASE_DB_PASSWORD`, variable `SUPABASE_PROJECT_REF`, and, recommended, yourself as a required reviewer so each run waits for your approval. Ship a schema change in two steps: first a migration the running app tolerates (applied with the workflow), then the code that uses it.
+
+Dependabot keeps the workflow actions, pinned to commit SHAs, up to date (one grouped pull request a month).
 
 ### Project layout
 
@@ -344,6 +368,7 @@ supabase/
   config.toml              # local stack: sign-ups disabled, strong passwords
   migrations/              # reviewed schema, RLS, storage (applied by db:start / db push)
 tests/{unit,db,e2e}/
+.github/                   # CI, manual database migrations, shared setup action, Dependabot
 docs/                      # specifications; docs/reference-cvs/ is gitignored (personal data)
 DESIGN.md                  # dashboard design system ("Swiss grid")
 ```
@@ -369,6 +394,18 @@ A CV stores a versioned, Zod-validated `definition` (`src/features/cv-builder/de
 - **Storage:** private `cvstudio-assets` bucket, images only, 5 MiB, owner-prefixed paths; no public URLs.
 - **Server-side checks:** the proxy redirect is a convenience; every page and data function verifies the JWT (`getClaims`) and the allowlist again. Post-login redirects only accept same-origin dashboard paths.
 - **Concurrency:** CV documents and templates carry a `revision` that increments on every write, so stale editors cannot silently overwrite newer changes.
+- **HTTP headers** (`src/config/security-headers.ts`): a baseline Content-Security-Policy limits scripts, styles, fonts, connections, frames, plugins and form targets to the site itself; images may also come from the Supabase project (signed portrait URLs). Inline scripts stay allowed because Next.js bootstraps pages with them; a nonce-based policy would block those too, but every page would then render on each request. Also sent: `X-Frame-Options: DENY`, `nosniff`, a strict referrer policy, a restrictive `Permissions-Policy`, `noindex`, and HSTS in production. The end-to-end suite fails on any policy violation.
+- **Dependency advisories:** CI fails on high or critical advisories in production dependencies (`pnpm audit --prod`). `pnpm audit` also lists `braces` (GHSA-vfj7-8cjw-p6xm, no fixed version yet): it is only used by ESLint's config, on the project's own file patterns, so it is not exploitable here.
+
+### Production checklist
+
+Settings that live outside the repository; check them once per environment.
+
+- **Supabase → Authentication:** sign-ups off; minimum password length 12 with lower/upper case and digits (mirrors `supabase/config.toml`); only the owner in `app_owners`.
+- **Supabase → Storage:** the `cvstudio-assets` bucket stays private (the migration creates it that way).
+- **Vercel:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `APP_TIME_ZONE` set for Production. Functions run in Dublin (`dub1`, `vercel.json`) next to the Supabase project (Ireland/London); keep the two in the same area, since every page reads the database several times.
+- **Cloudflare (if it proxies the domain):** PDF export makes Vercel's servers open the CV's print page (`/{locale}/print/{id}`) through the public domain, so firewall rules must not challenge those requests.
+- **PDF export logs** (Vercel → Logs): a success logs `PDF export` with its duration and size. A failure logs `PDF export failed` with one JSON object: the `stage` that failed (`load-engine`, `launch`, `open-page`, `navigate`, `ready` or `print`), the `reason`, the original `error` with its stack, the `origin` the print page was loaded from and how many session cookies were passed. Messages are redacted: no cookie values, tokens, signed-URL queries, record ids or CV content.
 
 ### Version pins worth knowing
 
@@ -378,8 +415,8 @@ A CV stores a versioned, Zod-validated `definition` (`src/features/cv-builder/de
 
 ### Remaining setup steps (later phases)
 
-1. Verify PDF generation on Vercel before advertising Download PDF as supported.
-2. Vercel project environment variables (URL and publishable key of the hosted project).
+1. PDF download in production: deploy the fix for the `browsers.json` file missing from the PDF function (see *Production checklist* for the log lines to check).
+2. CI/CD: the Vercel Deployment Check, the `main` ruleset and the `production` environment (see *Continuous integration and deployment*).
 
 Useful official resources: [Next.js docs](https://nextjs.org/docs), [Supabase docs](https://supabase.com/docs), [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [shadcn/ui](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/docs).
 

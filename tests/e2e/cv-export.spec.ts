@@ -47,6 +47,12 @@ test.describe("CV export", () => {
     for (const file of ["chromium.br", "fonts.tar.br", "swiftshader.tar.br", "al2023.tar.br"]) {
       expect(shipped.has(canonical(path.join(binDir, file))), file).toBe(true);
     }
+    // playwright-core reads it at import time through a path the tracer cannot follow.
+    const browsersJson = path.join(
+      realpathSync(path.join(root, "node_modules/playwright-core")),
+      "browsers.json",
+    );
+    expect(shipped.has(canonical(browsersJson)), "playwright-core/browsers.json").toBe(true);
   });
 
   test("Print opens the CV alone on A4 and starts the print dialog", async ({ page, context }) => {

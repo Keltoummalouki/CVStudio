@@ -1,30 +1,36 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportableCv } from "@/features/cv-export/server/load-export";
+import type * as RenderPdf from "@/lib/pdf/render-pdf";
+import { PdfRenderError } from "@/lib/pdf/render-pdf";
 import { OWNER_ID } from "../../utils/fake-supabase";
 
-const mocks = vi.hoisted(() => {
-  class PdfRenderError extends Error {
-    override name = "PdfRenderError";
-  }
-  return {
-    PdfRenderError,
-    getOwnerContext: vi.fn(),
-    loadExportableCv: vi.fn(),
-    renderPdf: vi.fn(),
-  };
-});
+const mocks = vi.hoisted(() => ({
+  getOwnerContext: vi.fn(),
+  loadExportableCv: vi.fn(),
+  renderPdf: vi.fn(),
+}));
 
 vi.mock("@/lib/auth/session", () => ({ getOwnerContext: mocks.getOwnerContext }));
 vi.mock("@/features/cv-export/server/load-export", () => ({
   loadExportableCv: mocks.loadExportableCv,
 }));
-vi.mock("@/lib/pdf/render-pdf", () => ({
-  PdfRenderError: mocks.PdfRenderError,
+// The real error type and failure description; only the browser is replaced.
+vi.mock("@/lib/pdf/render-pdf", async (importOriginal) => ({
+  ...(await importOriginal<typeof RenderPdf>()),
   renderPdf: mocks.renderPdf,
 }));
+
+const SESSION_VALUE = "base64-eyJhY2Nlc3NfdG9rZW4iOiJzZWNyZXQifQ";
 vi.mock("next/headers", () => ({
-  cookies: async () => ({ getAll: () => [{ name: "sb-auth-token", value: "session" }] }),
+  cookies: async () => ({
+    getAll: () => [
+      { name: "sb-abcdefgh-auth-token.0", value: SESSION_VALUE },
+      { name: "sb-abcdefgh-auth-token.1", value: "base64-second-half" },
+      { name: "__cf_bm", value: "cloudflare-cookie" },
+      { name: "NEXT_LOCALE", value: "fr" },
+    ],
+  }),
 }));
 
 const CV_ID = "3e9f6c1a-5b7d-4e2f-8a1c-9d0b2e4f6a8c";
@@ -46,6 +52,13 @@ async function download(cvId = CV_ID) {
   return GET(request, { params: Promise.resolve({ cvId }) });
 }
 
+/** The structured line the route logged with `message`, parsed. */
+function logged(spy: { mock: { calls: unknown[][] } }, message: string) {
+  const call = spy.mock.calls.findLast(([first]) => first === message);
+  expect(call, `a "${message}" log line`).toBeDefined();
+  return JSON.parse(String(call?.[1])) as Record<string, unknown>;
+}
+
 describe("GET /api/cvs/[cvId]/pdf", () => {
   // The route's rate limiter lives for the module's lifetime: give each test its own owner.
   let ownerSeq = 0;
@@ -61,6 +74,7 @@ describe("GET /api/cvs/[cvId]/pdf", () => {
     });
     mocks.loadExportableCv.mockResolvedValue(exportable());
     mocks.renderPdf.mockResolvedValue(new TextEncoder().encode("%PDF-1.7"));
+    vi.spyOn(console, "info").mockImplementation(() => {});
   });
 
   it("refuses anyone who is not the signed-in owner, before reading anything", async () => {
@@ -108,12 +122,15 @@ describe("GET /api/cvs/[cvId]/pdf", () => {
     expect((await download()).status).toBe(503);
   });
 
-  it("prints the CV's own print page with the caller's session and streams the PDF", async () => {
+  it("prints the CV's own print page with only the session cookies, and streams the PDF", async () => {
     const response = await download();
 
     expect(mocks.renderPdf).toHaveBeenCalledWith({
       url: `https://cv.example.test/fr/print/${CV_ID}`,
-      cookies: [{ name: "sb-auth-token", value: "session" }],
+      cookies: [
+        { name: "sb-abcdefgh-auth-token.0", value: SESSION_VALUE },
+        { name: "sb-abcdefgh-auth-token.1", value: "base64-second-half" },
+      ],
     });
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("application/pdf");
@@ -124,6 +141,11 @@ describe("GET /api/cvs/[cvId]/pdf", () => {
       'filename="CV francais - Developpeuse.pdf"',
     );
     expect(new TextDecoder().decode(await response.arrayBuffer())).toBe("%PDF-1.7");
+    expect(logged(vi.mocked(console.info), "PDF export")).toEqual({
+      origin: "https://cv.example.test",
+      elapsedMs: expect.any(Number),
+      bytes: 8,
+    });
   });
 
   it("allows one export at a time per owner", async () => {
@@ -144,16 +166,49 @@ describe("GET /api/cvs/[cvId]/pdf", () => {
     expect((await download()).status).toBe(200);
   });
 
-  it("logs why the engine failed without logging CV content", async () => {
+  it("logs the failing step, where the print page was looked for, and the cookies sent", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    mocks.renderPdf.mockRejectedValueOnce(new mocks.PdfRenderError("No Chromium-based browser"));
-    mocks.renderPdf.mockRejectedValueOnce(new TypeError("Jane Doe, 12 Secret Street"));
+    const cause = new Error("page.goto: net::ERR_CONNECTION_REFUSED");
+    mocks.renderPdf.mockRejectedValueOnce(
+      new PdfRenderError("navigate", "The print page did not load: net::ERR_CONNECTION_REFUSED", {
+        cause,
+      }),
+    );
 
     expect((await download()).status).toBe(503);
-    expect(log).toHaveBeenLastCalledWith("PDF export failed:", "No Chromium-based browser");
+
+    expect(logged(log, "PDF export failed")).toEqual({
+      stage: "navigate",
+      reason: "The print page did not load: net::ERR_CONNECTION_REFUSED",
+      error: {
+        name: "Error",
+        message: "page.goto: net::ERR_CONNECTION_REFUSED",
+        stack: expect.stringContaining("page.goto: net::ERR_CONNECTION_REFUSED"),
+      },
+      origin: "https://cv.example.test",
+      sessionCookies: 2,
+      elapsedMs: expect.any(Number),
+    });
+  });
+
+  it("logs unexpected errors with their message and stack, redacted", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.renderPdf.mockRejectedValueOnce(
+      new TypeError(
+        `cookie ${SESSION_VALUE} rejected for ${CV_ID}, token eyJhbGciOi.eyJzdWIi.c2ln`,
+      ),
+    );
 
     expect((await download()).status).toBe(503);
-    expect(log).toHaveBeenLastCalledWith("PDF export failed:", "TypeError");
-    expect(JSON.stringify(log.mock.calls)).not.toContain("Secret Street");
+
+    const entry = logged(log, "PDF export failed");
+    expect(entry).toMatchObject({
+      stage: "unknown",
+      error: { name: "TypeError", message: "cookie [cookie] rejected for :id, token [token]" },
+    });
+    const line = JSON.stringify(log.mock.calls);
+    expect(line).not.toContain(SESSION_VALUE);
+    expect(line).not.toContain(CV_ID);
+    expect(line).not.toContain("eyJhbGciOi");
   });
 });

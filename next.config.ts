@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { securityHeaders } from "./src/config/security-headers";
 
 const withNextIntl = createNextIntlPlugin({
   requestConfig: "./src/lib/i18n/request.ts",
@@ -10,29 +11,11 @@ const withNextIntl = createNextIntlPlugin({
   },
 });
 
-const isProduction = process.env.NODE_ENV === "production";
-
-// Baseline hardening for a private app. A nonce-based Content-Security-Policy
-// is deferred to the hardening phase because nonces force every route to render
-// dynamically, which would disable the prerendered shell.
-const securityHeaders = [
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  {
-    key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
-  },
-  { key: "X-Robots-Tag", value: "noindex, nofollow" },
-  ...(isProduction
-    ? [
-        {
-          key: "Strict-Transport-Security",
-          value: "max-age=63072000; includeSubDomains",
-        },
-      ]
-    : []),
-];
+const headers = securityHeaders({
+  isProduction: process.env.NODE_ENV === "production",
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  vercelEnv: process.env.VERCEL_ENV,
+});
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
@@ -45,14 +28,18 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "6mb",
     },
   },
-  // The serverless Chromium used for PDF export ships as compressed files that
-  // are read at runtime, not imported, so the bundle tracer must be told.
+  // The PDF engine reads files that the bundle tracer cannot see, so it must be
+  // told: the serverless Chromium ships as compressed files read at runtime,
+  // and playwright-core loads browsers.json through a path it builds at import
+  // time (without it, every export fails with "Cannot find module").
   // Keys are picomatch globs over the route path, where "[cvId]" would be a
-  // character class, hence "*". The package reads its files next to its real
+  // character class, hence "*". Packages read their files next to their real
   // location, which pnpm keeps under node_modules/.pnpm.
+  // scripts/check-pdf-bundle.mjs runs the engine from the traced files in CI.
   outputFileTracingIncludes: {
     "/api/cvs/*/pdf": [
       "./node_modules/.pnpm/@sparticuz+chromium@*/node_modules/@sparticuz/chromium/bin/**",
+      "./node_modules/.pnpm/playwright-core@*/node_modules/playwright-core/browsers.json",
     ],
   },
   turbopack: {
@@ -67,7 +54,7 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [{ source: "/:path*", headers }];
   },
 };
 

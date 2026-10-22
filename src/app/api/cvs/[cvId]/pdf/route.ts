@@ -7,7 +7,8 @@ import { createExportLimiter } from "@/features/cv-export/rate-limit";
 import { loadExportableCv } from "@/features/cv-export/server/load-export";
 import { getOwnerContext } from "@/lib/auth/session";
 import { PRINT_PATH } from "@/lib/auth/routes";
-import { PdfRenderError, renderPdf } from "@/lib/pdf/render-pdf";
+import { describePdfFailure, renderPdf } from "@/lib/pdf/render-pdf";
+import { sessionCookies } from "@/lib/supabase/session-cookies";
 
 // Node.js runtime (the default): the PDF engine drives a real browser.
 // Launching a browser and printing takes a few seconds on a cold serverless start.
@@ -51,13 +52,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const release = limiter.acquire(context.owner.id);
   if (!release) return failure("rate_limited", 429);
 
+  const started = Date.now();
+  const origin = request.nextUrl.origin;
+  let forwarded = 0;
   try {
-    // Cookies as they stand after this request's own session refresh.
-    const sessionCookies = (await cookies()).getAll();
+    // The session cookies as they stand after this request's own refresh:
+    // all the print page needs to recognize the owner, and nothing else.
+    const session = sessionCookies((await cookies()).getAll());
+    forwarded = session.length;
     const pdf = await renderPdf({
-      url: `${request.nextUrl.origin}/${exportable.locale}${PRINT_PATH}/${exportable.id}`,
-      cookies: sessionCookies,
+      url: `${origin}/${exportable.locale}${PRINT_PATH}/${exportable.id}`,
+      cookies: session,
     });
+    console.info(
+      "PDF export",
+      JSON.stringify({ origin, elapsedMs: Date.now() - started, bytes: pdf.byteLength }),
+    );
     return new NextResponse(Buffer.from(pdf), {
       headers: {
         "Content-Type": "application/pdf",
@@ -68,15 +78,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (error) {
-    // Never log CV content or cookies. The engine's own messages hold neither
-    // and say what to fix (such as no browser installed); others log by type.
-    const reason =
-      error instanceof PdfRenderError
-        ? error.message
-        : error instanceof Error
-          ? error.name
-          : "unknown error";
-    console.error("PDF export failed:", reason);
+    // One structured line: the step that failed and the original error with
+    // its stack, redacted. Never cookie values, tokens or CV content.
+    console.error(
+      "PDF export failed",
+      JSON.stringify({
+        ...describePdfFailure(error),
+        origin,
+        sessionCookies: forwarded,
+        elapsedMs: Date.now() - started,
+      }),
+    );
     return failure("unavailable", 503);
   } finally {
     release();

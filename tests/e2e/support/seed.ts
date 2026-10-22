@@ -238,4 +238,33 @@ export async function seedBuilderWorkspace() {
       [t("English", "Anglais"), shared("A2")],
     ].map(([name, proficiency]) => ({ id: null, name_i18n: name, proficiency_i18n: proficiency })),
   });
+
+  await seedPortrait(client);
+}
+
+// A generic 1×1 PNG: enough to exercise private storage, signed URLs, the
+// Content-Security-Policy and the PDF engine's wait for images.
+const PORTRAIT_PNG = Uint8Array.from(
+  atob(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+  ),
+  (char) => char.charCodeAt(0),
+);
+
+/** Stores a portrait the way the app does: in the owner's private folder, then on the profile. */
+async function seedPortrait(client: Awaited<ReturnType<typeof builderClient>>) {
+  const { data, error } = await client.auth.getUser();
+  if (error || !data.user) throw error ?? new Error("builder is not signed in");
+  const path = `${data.user.id}/portraits/e2e-portrait.png`;
+
+  const bucket = client.storage.from("cvstudio-assets");
+  await bucket.remove([path]);
+  const upload = await bucket.upload(path, PORTRAIT_PNG, { contentType: "image/png" });
+  if (upload.error) throw upload.error;
+
+  const update = await client
+    .from("profiles")
+    .update({ photo_path: path })
+    .eq("owner_id", data.user.id);
+  if (update.error) throw update.error;
 }
