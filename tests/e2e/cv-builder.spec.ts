@@ -63,6 +63,8 @@ test.describe("CV builder", () => {
     ).toHaveAttribute("aria-pressed", "false");
 
     await page.goto("/en/dashboard/cvs");
+    // Ten CVs per page: parallel tests may push this one past the first page.
+    await page.getByRole("searchbox", { name: "Search your CVs" }).fill(name);
     await expect(page.getByRole("link", { name: new RegExp(name) })).toContainText(
       "Ready to export",
     );
@@ -157,6 +159,8 @@ test.describe("CV builder", () => {
     const name = `List ${unique()}`;
     await createCv(page, name, "English");
     await page.goto("/en/dashboard/cvs");
+    // Finds the CV and its copy whatever page they land on.
+    await page.getByRole("searchbox", { name: "Search your CVs" }).fill(name);
 
     await page.getByRole("button", { name: `More actions for ${name}` }).click();
     await page.getByRole("menuitem", { name: "Duplicate" }).click();

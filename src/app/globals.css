@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "lenis/dist/lenis.css";
 
 /*
  * CVStudio dashboard design system: "The personal studio".
@@ -326,5 +327,282 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+/* Ivory creative studio: shell-only surfaces never affect the printed CV. */
+.studio-shell {
+  --background: #f4f2eb;
+  --foreground: #252c28;
+  --card-foreground: #252c28;
+  --muted-foreground: #62665e;
+  --border: #dfdfd4;
+  --muted: #eeeee5;
+  --accent: #eeeee5;
+  --primary: #252c28;
+  --card: #fffefb;
+  --ink-950: #252c28;
+  --ink-600: #62665e;
+  --ink-500: #70746b;
+  --ink-200: #dfdfd4;
+  --ink-100: #eeeee5;
+  --ink-50: #f8f8f2;
+  --rail: #252c28;
+  --rail-muted: #b8bdb3;
+  --rail-active: #414b40;
+  background: var(--background);
+  min-height: 100dvh;
+}
+.studio-rail {
+  border-right: 0;
+}
+.studio-rail nav a[aria-current="page"] {
+  box-shadow: inset 0 0 0 1px #64705d;
+}
+.studio-rail nav a[aria-current="page"] svg {
+  color: #e1eacb;
+}
+.studio-workspace-header {
+  background: transparent;
+  margin-inline: 2.5rem;
+  padding-inline: 0;
+  height: 4.5rem;
+}
+.studio-page {
+  padding-block: 2.5rem;
+}
+.studio-page-header {
+  padding-bottom: 0.5rem;
+}
+.studio-page-header h1 {
+  font-size: clamp(2rem, 3vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.studio-page-header p {
+  margin-top: 0.6rem;
+  font-size: 0.9375rem;
+}
+.studio-panel {
+  border-color: var(--border);
+}
+.studio-panel > div:first-child h2 {
+  font-size: 1.125rem;
+}
+.studio-panel > div:first-child p {
+  line-height: 1.65;
+}
+.studio-settings {
+  max-width: 100rem;
+}
+.studio-settings-grid {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+}
+.studio-settings-main {
+  min-width: 0;
+  display: grid;
+  gap: 1.5rem;
+}
+.studio-settings-basics {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr 1fr;
+}
+.studio-settings-basics .studio-panel {
+  height: 100%;
+}
+.studio-settings-basics .studio-panel > div:first-child {
+  flex-wrap: nowrap;
+}
+.studio-settings-basics .studio-panel > div:last-child {
+  margin-top: auto;
+}
+.studio-settings-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.studio-settings-jumps a {
+  padding: 0.5rem 0 1rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.studio-settings-jumps a:hover,
+.studio-settings-jumps a:focus-visible {
+  color: var(--foreground);
+}
+.studio-settings section[id] {
+  scroll-margin-top: 6rem;
+}
+.studio-about {
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #e8ece0;
+}
+.studio-about-art {
+  background: #ce6039;
+  color: #fff9ed;
+}
+.studio-about-copy {
+  padding: 1.5rem;
+}
+.studio-about-copy h2 {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-weight: 500;
+}
+.studio-about-copy p {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+.studio-about-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  border-top: 1px solid #c8cfbe;
+  padding-top: 1rem;
+}
+.studio-paper {
+  position: relative;
+  width: 100%;
+  height: 19rem;
+  isolation: isolate;
+}
+.studio-paper canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.studio-paper::after {
+  content: "";
+  position: absolute;
+  width: 40%;
+  height: 1rem;
+  left: 30%;
+  bottom: 1.5rem;
+  border-radius: 50%;
+  background: #572c1c;
+  filter: blur(18px);
+  opacity: 0.22;
+  z-index: -1;
+}
+.studio-paper-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  perspective: 700px;
+}
+.studio-paper-fallback > span {
+  position: absolute;
+  width: 8rem;
+  aspect-ratio: 210 / 297;
+  background: #fffcef;
+  transform: rotate(-10deg) rotateY(-20deg);
+  box-shadow: 0 15px 25px -10px #492a2555;
+}
+.studio-paper-fallback > span:first-child {
+  transform: translate(-1.2rem, 0.3rem) rotate(-22deg);
+  background: #29312b;
+}
+.studio-paper-fallback > span:nth-child(2) {
+  transform: translate(0.5rem, 0) rotate(6deg);
+}
+.studio-paper-fallback i {
+  display: block;
+  height: 2px;
+  margin: 1rem 1rem 0;
+  background: #b5b6aa;
+}
+.studio-paper-fallback i:first-child {
+  height: 5px;
+  width: 45%;
+  background: #28312b;
+  margin-top: 2rem;
+}
+.studio-paper[data-ready="true"] .studio-paper-fallback {
+  visibility: hidden;
+}
+.studio-welcome {
+  background: #e7ebdf;
+  min-height: 21rem;
+}
+.studio-welcome > div {
+  padding: 2.5rem;
+}
+.studio-welcome h2 {
+  font-size: clamp(1.9rem, 3vw, 2.75rem);
+  max-width: 19ch;
+  font-weight: 500;
+}
+.studio-welcome-art {
+  background: #d27049;
+  color: #252c28;
+}
+.studio-welcome-art .studio-paper {
+  height: 19rem;
+}
+@media (min-width: 64rem) {
+  .studio-shell {
+    --workspace-header-height: 4.5rem;
+  }
+  .studio-page {
+    padding-inline: 2.5rem;
+  }
+}
+@media (max-width: 79.99rem) {
+  .studio-settings-grid {
+    grid-template-columns: minmax(0, 1fr) 17rem;
+  }
+  .studio-settings-basics {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 63.99rem) {
+  .studio-settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-settings-basics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .studio-about {
+    display: grid;
+    grid-template-columns: 40% minmax(0, 1fr);
+  }
+  .studio-about .studio-paper {
+    height: 16rem;
+  }
+}
+@media (max-width: 39.99rem) {
+  .studio-page {
+    padding-block: 1.5rem;
+  }
+  .studio-settings-basics,
+  .studio-about {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .studio-about .studio-paper {
+    height: 13rem;
+  }
+  .studio-welcome > div {
+    padding: 1.5rem;
+  }
+  .studio-welcome-art .studio-paper {
+    height: 13rem;
+  }
+  .studio-welcome-art {
+    min-height: 0;
+  }
+}
+@media print {
+  .studio-paper {
+    display: none;
   }
 }

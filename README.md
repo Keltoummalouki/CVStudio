@@ -2,13 +2,13 @@
 
 > **Your career information, organized once. Your CV, customized any time.**
 
-**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus saved templates and print/PDF download. PDF download is verified locally but not yet on Vercel; hardening is next. See [Development and setup](#development-and-setup).
+**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus saved templates and print/PDF download. PDF download is verified locally and in production on Vercel; hardening is in progress. See [Development and setup](#development-and-setup).
 
 ## Overview
 
 CVStudio is a **private, owner/admin-managed CV generator**. Instead of repeatedly editing a PDF or word-processing document, the owner maintains structured career data in a dashboard backed by Supabase. A visual CV Builder then composes that data into a configurable document: choose which experiences and projects to include, reorganize sections/subsections, hide selected information, edit CV-specific wording, save a reusable template, preview, print, or download a PDF.
 
-**MVP has no AI.** A later, separately scoped release may add optional AI features.
+**The MVP has no AI.** An optional AI phase was approved on 2026-10-22, built in this order: an ATS match score against a pasted job post, then CVs tailored to a job post from the owner's career data, then translation suggestions. The owner reviews every AI suggestion before it is saved or exported; see [`CLAUDE.md`](./CLAUDE.md) §16.
 
 ### Core product principles
 
@@ -105,7 +105,7 @@ The precise downloadable-PDF implementation will be chosen after validating the 
 | Missing translation | Warning in the editor, no misleading automatic translation |
 | Export | Uses the chosen CV language; clearly warns before optional fallback to other-language content |
 
-**No AI translation** in the MVP. Changing the application interface language must not overwrite data in the other language.
+**No automatic translation.** The MVP has no AI translation; the AI phase adds translation suggestions that the owner reviews and accepts one by one. Changing the application interface language must not overwrite data in the other language.
 
 ### 7. UI and UX expectations
 
@@ -172,7 +172,7 @@ Pin dependency versions when implementing. Confirm currently supported Next.js/S
                     Preview   Print   Download PDF
 
             Languages: English (en) / French (fr)
-            AI services: NONE in the MVP
+            AI services: none in the MVP; Groq, with Gemini as fallback (server-only, opt-in), in the AI phase
 ```
 
 ### Suggested project organization
@@ -249,7 +249,7 @@ CVs contain private personal information. Security is mandatory:
 
 ## Development and setup
 
-**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing); the PDF path on Vercel is not verified yet. Saved templates are implemented too: save a CV's setup as a new template or over an existing one (after a warning), list them with how many CVs came from each, edit them in the same builder, duplicate, delete with undo, and start new CVs from one. Hardening follows; see the roadmap below.
+**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing), on Vercel too. Saved templates are implemented too: save a CV's setup as a new template or over an existing one (after a warning), list them with how many CVs came from each, edit them in the same builder, duplicate, delete with undo, and start new CVs from one. Hardening follows; see the roadmap below. AI phase, step 1 is implemented: job posts with owner-reviewed requirements (typed, or read by AI: Groq, with Gemini as the fallback) and a deterministic ATS match score for every CV (see *Job posts and the ATS match score*).
 
 ### Prerequisites
 
@@ -304,6 +304,12 @@ Environment variables (see `.env.example`):
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser-safe | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser-safe | Publishable key; the app refuses `sb_secret_…` or `service_role` keys here |
 | `APP_TIME_ZONE` | Server only | IANA zone used to display timestamps (default `UTC`) |
+| `AI_PRIMARY_PROVIDER` | Server only | `groq` (default) or `gemini`: which provider answers first; the other is the fallback. Any other value turns AI off and Settings says why |
+| `GROQ_API_KEY` | Server only | Groq API key for job-post analysis; never prefix it with `NEXT_PUBLIC_` |
+| `GROQ_MODEL` | Server only | Groq model (default `openai/gpt-oss-20b`); it must support strict structured outputs |
+| `GEMINI_API_KEY` | Server only | Gemini API key, the fallback; never prefix it with `NEXT_PUBLIC_`. Without either key, AI is shown as not set up |
+| `AI_FAKE_PROVIDER` | Server only, local and CI | `1` answers AI requests with deterministic fakes instead of Groq and Gemini (used by the e2e suite). Ignored on Vercel |
+| `GOOGLE_GENAI_DEBUG` | Never set | The SDK would log every request and response; AI refuses to run while it is set |
 
 ### Scripts (all verified)
 
@@ -360,6 +366,9 @@ src/
   features/cv-builder/     # composition schema, resolver, edit operations, builder UI
   features/cv-documents/   # CV list, creation, autosave, duplicate/delete actions
   features/cv-renderer/    # classic-reference-v1 A4 renderer (Poppins, CSS module)
+  features/job-posts/      # job posts, requirement editor, deterministic matching and scores
+  features/ai-settings/    # AI switch, daily limit, usage and cost (Settings)
+  lib/ai/                  # server-only Groq and Gemini clients, fallback chain, fakes, retries, quota and request log
   components/forms/        # LocalizedField, PeriodField, SortableList, save bar, unsaved-changes guard
   lib/auth/                # route policy, session + allowlist data-access layer
   lib/{i18n,supabase,env,data}/
@@ -385,6 +394,41 @@ A CV stores a versioned, Zod-validated `definition` (`src/features/cv-builder/de
 - **Resolution** is one pure function (`src/features/cv-builder/resolve.ts`) shared by the live preview and the future print/PDF route; the renderer (`src/features/cv-renderer/classic-reference-v1`) is purely presentational, with CSS-module styles in physical units isolated from the dashboard.
 - **Saving:** the builder autosaves (debounced) with the document `revision`; a write from another tab or device is reported as a conflict (keep mine / load theirs) instead of being overwritten. Deleted CVs are kept (soft delete) so the deletion can be undone.
 - **Templates** (`src/features/cv-templates`) hold the same `definition` plus a name, description and language, and are edited with the same builder. They are copy-on-apply: a CV started from a template gets its own copy of the definition and only records the template's id and name as provenance (no foreign key), so editing, replacing or deleting a template never changes existing CVs. Like CVs, templates read live career data; entries added after a template was saved are not selected in CVs made from it.
+
+### Job posts and the ATS match score (AI phase, step 1)
+
+The **Jobs** section stores job posts and scores every CV against their requirements. AI only helps read a post; the score itself never calls AI.
+
+- **Adding a job post:** paste the ad, then either *Analyze with AI* or *Enter requirements myself*. The AI provider (Groq, or Gemini when Groq is unavailable) receives **only the pasted text** (never a CV or career data) and returns a draft: title, company, language, and requirements (skill, tool, language, education, certification, domain, soft skill or other; *required* or *nice to have*; other names such as "React.js" or the English/French equivalent; an optional note such as "3+ years"). The draft lands in the editor as unsaved changes: the owner corrects it and saves. *Analyze again* on a saved post works the same way, after a confirmation.
+- **Without AI** (switched off, quota used, or no key on the server) the owner types the requirements; scoring works the same.
+- **Scores** appear on the job page, best CV first, labelled as an *estimated keyword coverage*, not a real employer's ATS result. Each CV expands into: requirements found (each with the matched words, their context and where they are in the CV), requirements that exist in the career data but are not shown in this CV, and requirements found nowhere. The job-title check is reported apart.
+
+**Scoring formula** (`src/features/job-posts/matching.ts`):
+
+```text
+score = round(100 × Σ weight(found requirements) / Σ weight(all requirements))
+weight = 2 for a required item, 1 for a nice-to-have
+```
+
+- Only text the CV shows counts, as printed: hidden sections, entries and bullets are excluded and per-CV wording replaces the career-data text. Contacts, links, dates and built-in headings are not scored.
+- Each requirement counts once, however often its name appears. Two requirements cannot share a name (the editor refuses it).
+- Names match as whole terms, ignoring accents and capitals, with these rules: `C++`, `C#`, `.NET`, `Node.js`, `ASP.NET`, `Objective-C` and `R&D` stay whole ("Java" is not found in "JavaScript", "C" not in "C++", "SQL" not in "NoSQL"); "React" is not found in "React Native"; "React.js"/"ReactJS" count as "React", "ASP.NET" as ".NET", "HTML5" as "HTML", "APIs" as "API"; hyphens and spacing do not matter ("front-end" = "front end" = "frontend"); a few French and English function words are skipped inside phrases ("gestion de projet" matches "gestion des projets"); one- or two-letter names ("Go", "R", "AI") only match when written with a capital.
+- A requirement missing from the CV but present elsewhere in the career data (any language, archived records excluded) is reported as hidden and earns nothing.
+- The job title (and its other names) is looked for in the CV title and the experience roles; it is not part of the score.
+
+**AI providers and fallback** (`src/lib/ai`, CLAUDE.md §16): server-only modules behind one provider interface, chained by `src/lib/ai/run.ts`.
+
+- **Groq first** (`groq-sdk` 1.6.0, model from `GROQ_MODEL`, default `openai/gpt-oss-20b`): chat completions with strict JSON-schema structured outputs, low reasoning effort and no reasoning text in the answer, SDK retries and SDK logging off (`GROQ_LOG=debug` would log job posts), and the base URL pinned to `api.groq.com`. Output is capped at 3,072 tokens: the free plan allows 8,000 tokens per minute and seems to count the prompt plus that cap. In live checks (2026-10-23), a post at the 15,000-character maximum took about 3,900 prompt tokens and analyses used under 600 tokens of output, so posts fit with room to spare; one that does not is refused (413) and goes to Gemini, or, without a fallback, the owner is asked to shorten it.
+- **Gemini as the fallback** (`@google/genai` 2.30.0, Interactions API, model `gemini-3.8-flash`, `store: false`), unchanged. `AI_PRIMARY_PROVIDER=gemini` swaps the order.
+- **Fallback** happens only when the provider itself is unavailable: a timeout, a rate limit (HTTP 429), a post too large for Groq's plan (413), a server error (5xx, 498) or no connection. A refused key (401/403), a refused request (400/404/422), an unusable answer and our own validation or quota refusals are reported, never handed to the other provider.
+- **Time and retries:** 30 seconds for the whole request. While Gemini waits behind it, Groq gets at most 12 seconds; the fallback gets the rest, and is not started with less than 8 seconds left. Each provider retries rate-limit, server and network errors at most twice, after the provider's `Retry-After` or an exponential backoff; timeouts are never retried.
+- **Answers** from either provider are validated with the same Zod schema and normalized by the same code into the same draft. The job post is wrapped in tags it cannot close, and the instructions treat it as data. AI is off until the owner turns it on in **Settings**, where the daily limit is set (10 by default, 1–50). `begin_ai_request()` enforces the switch, one request at a time and the daily quota (every request started since midnight UTC, failed ones included) in Postgres under a per-owner advisory lock, so parallel server instances cannot exceed it. An analysis is one request however many providers it tries: one row in `ai_requests` and one unit of the daily quota. `ai_request_attempts` records each provider tried (provider, model, outcome, HTTP status, retries, token counts, estimated cost, duration), and `ai_requests` names the provider and model that answered. Both hold metadata only, never the post or the answer. Settings shows the primary and fallback providers and why one is not set up, the model of the last analysis, today's usage, the month's estimated cost (at list prices; Groq's free plan bills nothing) and the latest requests with the providers they tried. Failures are logged as one JSON line with codes and counts only.
+
+**Setup:**
+
+1. Create a Groq API key at console.groq.com and, in its **Data Controls**, turn on Zero Data Retention (Groq's terms forbid training on what you send, but by default it may keep logs for up to 30 days). Set `GROQ_API_KEY` (and `GROQ_MODEL` if not the default) as server-only variables in Vercel and `.env.local`.
+2. For the fallback, create a Gemini API key in a Google Cloud project **with billing enabled** (on the free tier Google may use what you send to improve its products, and its terms forbid personal data there), set `GEMINI_API_KEY` the same way, and set a budget alert in Google Cloud Billing.
+3. Apply `supabase/migrations/20261023100000_ai_job_posts.sql`, then `supabase/migrations/20261023130000_ai_provider_attempts.sql`.
 
 ### Security model (Phase 2)
 
@@ -427,7 +471,7 @@ Useful official resources: [Next.js docs](https://nextjs.org/docs), [Supabase do
 - [ ] Each built-in section can be included/hidden/reordered; custom sections/subsections are editable.
 - [ ] Individual CV records, bullets, skills, and supported fields can be shown/hidden or reordered.
 - [ ] UI is translated to English and French; CV text can be maintained separately in each language.
-- [ ] Missing translations are clearly identified; there is no AI or silent text auto-translation.
+- [ ] Missing translations are clearly identified; nothing is auto-translated silently.
 - [ ] The reference-based `classic-reference-v1` follows the supplied A4 CV layout.
 - [ ] Photo, contacts, section order, optional groups, and selected entries are reflected in preview and output.
 - [ ] Owner can save/edit/duplicate/delete CVs and saved presets independently without unintended data loss.
@@ -436,7 +480,7 @@ Useful official resources: [Next.js docs](https://nextjs.org/docs), [Supabase do
 - [ ] Forms have validation and graceful loading, empty, success, and failure states; unsaved work is protected.
 - [ ] Desktop and mobile flows are usable; keyboard/touch interactions and basic accessibility are verified.
 - [ ] RLS/IDOR checks and core builder/export tests pass.
-- [ ] No AI integrations, AI secrets, or AI-backed flows exist in the MVP.
+- [ ] AI is limited to the approved AI phase: opt-in, server-only key, and every suggestion reviewed before it is saved.
 
 ## Development roadmap
 
@@ -449,7 +493,7 @@ Useful official resources: [Next.js docs](https://nextjs.org/docs), [Supabase do
 | **4 — Saved CVs & presets** | Save, list, edit, duplicate, apply, delete; safe copy/snapshot behavior |
 | **5 — Print & PDF** | A4 styling, reference-template fidelity, export, PDF regression tests |
 | **6 — MVP hardening** | Accessibility, loading/error states, security review, E2E, performance, release |
-| **Later — AI (not MVP)** | Optional, human-reviewed writing/translation/job-tailoring features, separately scoped |
+| **AI phase (approved 2026-10-22)** | Opt-in, owner-reviewed AI features (Groq, with Gemini as fallback): job-post ATS match score (keyword-based), then job-tailored CVs from career data, then translation suggestions |
 
 ## Contributing / working with Claude
 

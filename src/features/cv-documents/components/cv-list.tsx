@@ -1,12 +1,14 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowUpRightIcon,
   CopyIcon,
   DownloadIcon,
   EllipsisIcon,
   FileSearchIcon,
+  InfoIcon,
   PencilLineIcon,
   PrinterIcon,
   SearchIcon,
@@ -17,6 +19,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { DocumentGlyph } from "@/components/feedback/document-glyph";
+import { Pagination } from "@/components/layout/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,9 +32,62 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCvExport } from "@/features/cv-export/components/use-cv-export";
 import { Link, useRouter } from "@/lib/i18n/navigation";
+import { pageCountOf, parsePage } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { deleteCv, duplicateCv, restoreCv } from "../server/actions";
 import type { CvListItem } from "../server/queries";
+
+export const CV_PAGE_SIZE = 10;
+
+const FILTERS = ["all", "ready", "attention"] as const;
+type Filter = (typeof FILTERS)[number];
+
+/** What the list shows: kept in the address bar as ?q=…&status=…&page=…. */
+type View = { search: string; filter: Filter; page: number };
+
+function readView(params: URLSearchParams | null): View {
+  const status = params?.get("status");
+  return {
+    search: params?.get("q") ?? "",
+    filter: FILTERS.find((filter) => filter === status) ?? "all",
+    page: parsePage(params?.get("page")),
+  };
+}
+
+function viewQuery(view: View): string {
+  const params = new URLSearchParams();
+  if (view.search) params.set("q", view.search);
+  if (view.filter !== "all") params.set("status", view.filter);
+  if (view.page > 1) params.set("page", String(view.page));
+  return params.toString();
+}
+
+/**
+ * The view follows the URL: going back from a CV returns to the same page and
+ * search. The list writes the URL itself (no navigation, nothing refetched);
+ * a navigation to another view of this page, such as the CVs link while on
+ * page 3, is adopted from the URL.
+ */
+function useListView() {
+  const params = useSearchParams();
+  const urlQuery = params?.toString() ?? "";
+  const [view, setView] = useState(() => readView(params));
+  const [seenQuery, setSeenQuery] = useState(urlQuery);
+
+  if (urlQuery !== seenQuery) {
+    setSeenQuery(urlQuery);
+    // The list's own updates come back here with the values it already shows.
+    const fromUrl = readView(params);
+    if (viewQuery(fromUrl) !== viewQuery(view)) setView(fromUrl);
+  }
+
+  const show = (next: View) => {
+    setView(next);
+    const query = viewQuery(next);
+    window.history.replaceState(null, "", query ? `?${query}` : window.location.pathname);
+  };
+  return [view, show] as const;
+}
 
 function StatusBadge({ cv }: { cv: CvListItem }) {
   const t = useTranslations("cvs.status");
@@ -45,14 +101,22 @@ function StatusBadge({ cv }: { cv: CvListItem }) {
   return <Badge variant="success">{t("ready")}</Badge>;
 }
 
-export function CvList({ cvs }: { cvs: readonly CvListItem[] }) {
+type CvListProps = {
+  cvs: readonly CvListItem[];
+  /** All of the owner's CVs; more than `cvs` when the oldest were left out of the list. */
+  total?: number;
+};
+
+export function CvList({ cvs, total = cvs.length }: CvListProps) {
   const t = useTranslations("cvs");
   const format = useFormatter();
   const router = useRouter();
   const searchId = useId();
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<"all" | "ready" | "attention">("all");
+  const [view, show] = useListView();
+  const { search, filter } = view;
   const [deleting, setDeleting] = useState<CvListItem | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const movedPage = useRef(false);
   const tExport = useTranslations("cvExport");
   const exporter = useCvExport();
   /** Exports need every shown text in the CV language; the editor lists what is missing. */
@@ -81,6 +145,27 @@ export function CvList({ cvs }: { cvs: readonly CvListItem[] }) {
       (filter === "all" || (filter === "attention" ? needsAttention(cv) : !needsAttention(cv)))
     );
   });
+  const pageCount = pageCountOf(filtered.length, CV_PAGE_SIZE);
+  // A page beyond the end (e.g. after deleting the last CV of the last page) shows the last one.
+  const page = Math.min(view.page, pageCount);
+  const first = (page - 1) * CV_PAGE_SIZE;
+  const shown = filtered.slice(first, first + CV_PAGE_SIZE);
+
+  const setSearch = (value: string) => show({ ...view, search: value, page: 1 });
+  const setFilter = (value: Filter) => show({ ...view, filter: value, page: 1 });
+  const goToPage = (value: number) => {
+    if (value === page) return;
+    movedPage.current = true;
+    show({ ...view, page: value });
+  };
+
+  // After a page change, the new page starts where the reader is: its first CV is the next Tab stop.
+  useEffect(() => {
+    if (!movedPage.current) return;
+    movedPage.current = false;
+    listRef.current?.focus({ preventScroll: true });
+    listRef.current?.scrollIntoView({ block: "start" });
+  }, [page]);
 
   const duplicate = async (cv: CvListItem) => {
     const result = await duplicateCv(cv.id, t("copyName", { name: cv.name }));
@@ -145,7 +230,7 @@ export function CvList({ cvs }: { cvs: readonly CvListItem[] }) {
           role="group"
           aria-label={t("library.filter")}
         >
-          {(["all", "ready", "attention"] as const).map((option) => (
+          {FILTERS.map((option) => (
             <button
               key={option}
               type="button"
@@ -173,6 +258,12 @@ export function CvList({ cvs }: { cvs: readonly CvListItem[] }) {
             {t("library.results", { count: filtered.length })}
           </span>
         </div>
+        {total > cvs.length ? (
+          <p className="flex gap-2 text-[0.8125rem] text-muted-foreground">
+            <InfoIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            {t("library.truncated", { shown: cvs.length, total })}
+          </p>
+        ) : null}
       </div>
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
@@ -183,17 +274,21 @@ export function CvList({ cvs }: { cvs: readonly CvListItem[] }) {
             type="button"
             variant="outline"
             className="mt-2"
-            onClick={() => {
-              setSearch("");
-              setFilter("all");
-            }}
+            onClick={() => show({ search: "", filter: "all", page: 1 })}
           >
             {t("library.reset")}
           </Button>
         </div>
       ) : (
-        <ul className="divide-y">
-          {filtered.map((cv) => (
+        <ul
+          ref={listRef}
+          tabIndex={-1}
+          aria-label={
+            pageCount > 1 ? t("library.pageLabel", { page, count: pageCount }) : undefined
+          }
+          className="scroll-mt-24 divide-y outline-none"
+        >
+          {shown.map((cv) => (
             <li
               key={cv.id}
               className="group/document flex items-center gap-2 pr-3 transition-colors hover:bg-ink-50 sm:pr-5"
@@ -284,6 +379,23 @@ export function CvList({ cvs }: { cvs: readonly CvListItem[] }) {
           ))}
         </ul>
       )}
+      {pageCount > 1 ? (
+        <div className="flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {t("library.range", {
+              from: first + 1,
+              to: first + shown.length,
+              total: filtered.length,
+            })}
+          </p>
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            onPageChange={goToPage}
+            label={t("library.pages")}
+          />
+        </div>
+      ) : null}
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => {

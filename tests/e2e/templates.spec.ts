@@ -19,9 +19,8 @@ const expectSaved = (page: Page) =>
 async function createCv(page: Page, name: string) {
   await page.goto("/en/dashboard/cvs/new");
   await page.getByRole("textbox", { name: "Name" }).fill(name);
-  // "Start from" only appears once the owner has templates.
-  const careerData = page.getByRole("radio", { name: /^Your career data/ });
-  if ((await careerData.count()) > 0) await careerData.check();
+  // The built-in template: every active entry of the career data.
+  await page.getByRole("radio", { name: /^Classic/ }).check();
   await page.getByRole("radio", { name: /^English/ }).check();
   await page.getByRole("button", { name: "Create and open" }).click();
   await expect(page).toHaveURL(CV_URL);

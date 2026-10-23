@@ -21,7 +21,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CvsPage() {
-  const [t, cvs] = await Promise.all([getTranslations("cvs"), listCvDocuments()]);
+  const [t, library] = await Promise.all([getTranslations("cvs"), listCvDocuments()]);
+  const cvs = library.items;
 
   return (
     <PageContainer>
@@ -49,7 +50,7 @@ export default async function CvsPage() {
             </EmptyContent>
           </Empty>
         ) : (
-          <CvList cvs={cvs} />
+          <CvList cvs={cvs} total={library.total} />
         )}
       </Panel>
     </PageContainer>

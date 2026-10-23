@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
-import { PRIMARY_NAVIGATION, isNavigationItemActive } from "@/config/navigation";
+import { MOBILE_TAB_NAVIGATION, isNavigationItemActive } from "@/config/navigation";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,7 @@ function TabLinks({ pathname }: { pathname: string | null }) {
 
   return (
     <ul className="mx-auto grid h-(--tabbar-height) max-w-xl grid-cols-5">
-      {PRIMARY_NAVIGATION.map((item) => {
+      {MOBILE_TAB_NAVIGATION.map((item) => {
         const active = pathname !== null && isNavigationItemActive(item, pathname);
         const Icon = item.icon;
         return (

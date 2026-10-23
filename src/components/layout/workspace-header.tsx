@@ -12,7 +12,11 @@ function CurrentLocation() {
   const t = useTranslations("navigation");
   const tSections = useTranslations("careerData.sections");
   const tStudio = useTranslations("studio");
+  const tJobs = useTranslations("jobs.breadcrumb");
   const current = PRIMARY_NAVIGATION.find((item) => isNavigationItemActive(item, pathname));
+  const jobPage = pathname.startsWith("/dashboard/jobs/")
+    ? tJobs(pathname.endsWith("/new") ? "new" : "detail")
+    : null;
   const section = CAREER_SECTIONS.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
@@ -36,7 +40,7 @@ function CurrentLocation() {
             <ChevronRightIcon aria-hidden="true" className="size-3 text-subtle-foreground" />
             <Link
               href={current.href}
-              aria-current={!section && !isCvEditor ? "page" : undefined}
+              aria-current={!section && !isCvEditor && !jobPage ? "page" : undefined}
               className="truncate rounded-sm font-medium hover:underline"
             >
               {t(current.id)}
@@ -57,6 +61,12 @@ function CurrentLocation() {
             <span aria-current="page">{tStudio("editor")}</span>
           </li>
         ) : null}
+        {jobPage ? (
+          <li className="flex items-center gap-2.5">
+            <ChevronRightIcon aria-hidden="true" className="size-3 text-subtle-foreground" />
+            <span aria-current="page">{jobPage}</span>
+          </li>
+        ) : null}
       </ol>
     </nav>
   );
@@ -65,7 +75,7 @@ function CurrentLocation() {
 export function WorkspaceHeader() {
   const t = useTranslations("studio");
   return (
-    <div className="hidden h-(--workspace-header-height) items-center justify-between gap-4 border-b bg-card px-8 lg:flex">
+    <div className="studio-workspace-header hidden h-(--workspace-header-height) items-center justify-between gap-4 border-b bg-card px-8 lg:flex">
       <Suspense fallback={<span className="text-xs text-muted-foreground">{t("workspace")}</span>}>
         <CurrentLocation />
       </Suspense>

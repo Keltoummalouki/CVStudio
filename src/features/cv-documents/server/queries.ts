@@ -38,23 +38,34 @@ export function summarizeIssues(
   return { missingTranslations: blocking, warnings: issues.length - blocking };
 }
 
-export async function listCvDocuments(): Promise<CvListItem[]> {
+export type CvLibrary = {
+  /** The most recently edited CVs, at most LIST_LIMIT: each one's status needs its layout resolved. */
+  items: CvListItem[];
+  /** Every live CV of the owner, so the list can say when some are not shown. */
+  total: number;
+};
+
+export async function listCvDocuments(): Promise<CvLibrary> {
   const context = await requireOwner();
   const { supabase, owner } = context;
   const [result, master, labels] = await Promise.all([
     supabase
       .from("cv_documents")
-      .select("id, name, locale, definition, updated_at, created_from_template_name")
+      .select("id, name, locale, definition, updated_at, created_from_template_name", {
+        count: "exact",
+      })
       .eq("owner_id", owner.id)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false })
+      // CVs saved in the same instant keep one order, so pages never swap them.
+      .order("id")
       .limit(LIST_LIMIT),
     loadMasterData(context),
     getCvLabels(),
   ]);
   if (result.error) throw new DataAccessError("list CVs", { cause: result.error });
 
-  return result.data.flatMap((row) =>
+  const items = result.data.flatMap((row) =>
     isLocale(row.locale)
       ? [
           {
@@ -68,6 +79,7 @@ export async function listCvDocuments(): Promise<CvListItem[]> {
         ]
       : [],
   );
+  return { items, total: Math.max(result.count ?? 0, items.length) };
 }
 
 export type CvDocument = {

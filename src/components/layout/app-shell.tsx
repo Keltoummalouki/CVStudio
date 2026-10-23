@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { StudioMotion } from "./studio-motion";
 import { useTranslations } from "next-intl";
 import { AppRail } from "./app-rail";
 import { MobileTabBar } from "./mobile-tab-bar";
@@ -11,7 +13,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations("common");
 
   return (
-    <div className="min-h-dvh">
+    <div className="studio-shell min-h-dvh">
+      <Suspense fallback={null}>
+        <StudioMotion />
+      </Suspense>
       <a
         href={`#${MAIN_CONTENT_ID}`}
         className="sr-only z-50 rounded-md bg-ink-950 px-3 py-2 text-sm font-medium text-paper focus:not-sr-only focus:fixed focus:top-3 focus:left-3"

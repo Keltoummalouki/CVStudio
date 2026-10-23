@@ -30,11 +30,21 @@ describe("new CV form", () => {
     push.mockReset();
   });
 
-  it("starts from career data when there are no templates", async () => {
+  it("asks for a template, then a language, with Classic built in", async () => {
     const user = userEvent.setup();
     renderWithIntl(<NewCvForm defaultLocale="en" templates={[]} initialTemplateId={null} />);
 
-    expect(screen.queryByRole("group", { name: "Start from" })).not.toBeInTheDocument();
+    const [template, language] = screen.getAllByRole("group");
+    expect(template).toHaveAccessibleName("Template");
+    expect(language).toHaveAccessibleName("CV language");
+    expect(screen.getByRole("radio", { name: /^Classic/ })).toBeChecked();
+    expect(screen.getByText(/Your own templates will appear here/)).toBeInTheDocument();
+
+    // The name is checked before anything is created.
+    await user.click(screen.getByRole("button", { name: "Create and open" }));
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveFocus();
+    expect(createCv).not.toHaveBeenCalled();
+
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Frontend – Acme");
     await user.click(screen.getByRole("button", { name: "Create and open" }));
 
@@ -52,10 +62,12 @@ describe("new CV form", () => {
       <NewCvForm defaultLocale="en" templates={[FRENCH_TEMPLATE]} initialTemplateId={null} />,
     );
 
-    expect(screen.getByRole("radio", { name: /Your career data/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Classic/ })).toBeChecked();
+    expect(screen.getByText(/starts with all your current career data/)).toBeInTheDocument();
     await user.click(screen.getByRole("radio", { name: /Candidatures en français/ }));
     expect(screen.getByRole("radio", { name: /^French/ })).toBeChecked();
     expect(screen.getByText(/Entries added since the template was saved/)).toBeInTheDocument();
+    expect(screen.getByText("Saved in French")).toBeInTheDocument();
 
     await user.click(screen.getByRole("radio", { name: /^English/ }));
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Bilingual test");
@@ -86,7 +98,7 @@ describe("new CV form", () => {
         initialTemplateId="44444444-4444-4444-8444-444444444444"
       />,
     );
-    expect(screen.getByRole("radio", { name: /Your career data/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Classic/ })).toBeChecked();
     expect(screen.getByRole("radio", { name: /^English/ })).toBeChecked();
   });
 
@@ -107,5 +119,57 @@ describe("new CV form", () => {
       "That template no longer exists. Choose another starting point.",
     );
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("names a CV made for a job post after it, in its language", async () => {
+    const user = userEvent.setup();
+    renderWithIntl(
+      <NewCvForm
+        defaultLocale="en"
+        templates={[]}
+        initialTemplateId={null}
+        job={{ id: "job-1", title: "Développeuse React", company: "Acme", language: "fr" }}
+      />,
+    );
+
+    expect(screen.getByText(/For the job post “Développeuse React”/)).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Développeuse React – Acme");
+    expect(screen.getByRole("radio", { name: /^French/ })).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Create and open" }));
+    expect(createCv).toHaveBeenCalledWith({
+      name: "Développeuse React – Acme",
+      locale: "fr",
+      templateId: undefined,
+    });
+  });
+
+  it("keeps the job post's language when a template saved in another one is chosen", async () => {
+    const user = userEvent.setup();
+    renderWithIntl(
+      <NewCvForm
+        defaultLocale="fr"
+        templates={[FRENCH_TEMPLATE]}
+        initialTemplateId={null}
+        job={{ id: "job-1", title: "Frontend developer", company: "", language: "en" }}
+      />,
+    );
+
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Frontend developer");
+    await user.click(screen.getByRole("radio", { name: /Candidatures en français/ }));
+    expect(screen.getByRole("radio", { name: /^English/ })).toBeChecked();
+  });
+
+  it("leaves the language to the usual default for a post in another language", () => {
+    renderWithIntl(
+      <NewCvForm
+        defaultLocale="en"
+        templates={[FRENCH_TEMPLATE]}
+        initialTemplateId={FRENCH_TEMPLATE.id}
+        job={{ id: "job-1", title: "Entwickler", company: "GmbH", language: "other" }}
+      />,
+    );
+    // The chosen template's language, as without a job post.
+    expect(screen.getByRole("radio", { name: /^French/ })).toBeChecked();
   });
 });

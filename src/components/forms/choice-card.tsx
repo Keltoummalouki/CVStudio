@@ -8,6 +8,8 @@ type ChoiceCardProps = Omit<React.ComponentProps<"input">, "type" | "title"> & {
   description?: React.ReactNode;
   /** Extra details under the description, e.g. a language badge. */
   meta?: React.ReactNode;
+  /** A picture before the text, e.g. a document thumbnail. Decorative. */
+  media?: React.ReactNode;
   compact?: boolean;
   containerClassName?: string;
 };
@@ -18,6 +20,7 @@ export function ChoiceCard({
   title,
   description,
   meta,
+  media,
   compact = false,
   containerClassName,
   ...inputProps
@@ -38,6 +41,11 @@ export function ChoiceCard({
         className="absolute inset-0 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
         {...inputProps}
       />
+      {media ? (
+        <span aria-hidden="true" className="shrink-0">
+          {media}
+        </span>
+      ) : null}
       <span className={cn("flex min-w-0 flex-1 flex-col", compact ? "gap-1" : "gap-2")}>
         <span className={cn("font-semibold", compact ? "text-sm" : "text-lg tracking-[-0.02em]")}>
           {title}

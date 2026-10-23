@@ -10,7 +10,11 @@ import {
 } from "./helpers";
 
 type Table = keyof Database["public"]["Tables"];
-type OwnedTable = Exclude<Table, "app_owners" | "profiles">;
+// One row per owner (keyed by owner_id) or written only through functions: tests/db/ai.test.ts.
+type OwnedTable = Exclude<
+  Table,
+  "app_owners" | "profiles" | "owner_settings" | "ai_requests" | "ai_request_attempts"
+>;
 
 /** One valid row per owned table, inserted in dependency order by the given client. */
 async function seedEveryTable(client: Client): Promise<Record<OwnedTable, string>> {
@@ -149,6 +153,13 @@ async function seedEveryTable(client: Client): Promise<Record<OwnedTable, string
         .select("id")
         .single(),
     ),
+    job_posts: await one(
+      client
+        .from("job_posts")
+        .insert({ title: "Frontend developer", description: "React and TypeScript." })
+        .select("id")
+        .single(),
+    ),
   };
 }
 
@@ -169,6 +180,7 @@ const OWNED_TABLES: OwnedTable[] = [
   "custom_items",
   "cv_documents",
   "cv_templates",
+  "job_posts",
 ];
 
 describe("row level security", () => {

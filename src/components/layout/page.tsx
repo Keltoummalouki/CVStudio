@@ -5,7 +5,7 @@ export function PageContainer({ className, ...props }: React.ComponentProps<"div
   return (
     <div
       className={cn(
-        "mx-auto flex w-full max-w-[88rem] flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-7 lg:px-8 lg:py-8",
+        "studio-page mx-auto flex w-full max-w-[88rem] flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-7 lg:px-8 lg:py-8",
         className,
       )}
       {...props}
@@ -21,7 +21,7 @@ type PageHeaderProps = {
 
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header className="studio-page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 space-y-1.5">
         <h1 className="text-2xl leading-tight font-semibold tracking-[-0.03em] sm:text-[1.75rem]">
           {title}
@@ -39,7 +39,7 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
 export function Panel({ className, ...props }: React.ComponentProps<"section">) {
   return (
     <section
-      className={cn("flex min-w-0 flex-col rounded-lg border bg-card", className)}
+      className={cn("studio-panel flex min-w-0 flex-col rounded-lg border bg-card", className)}
       {...props}
     />
   );

@@ -37,10 +37,14 @@ export function TextareaField({
     >
       <label htmlFor={id} className="text-sm font-medium">
         {label}
+        {/* A real space, so the accessible name reads "Description Optional". */}
         {optional ? (
-          <span className="ml-1.5 text-[0.8125rem] font-normal text-subtle-foreground">
-            {t("optional")}
-          </span>
+          <>
+            {" "}
+            <span className="ml-1 text-[0.8125rem] font-normal text-subtle-foreground">
+              {t("optional")}
+            </span>
+          </>
         ) : null}
       </label>
       <Textarea

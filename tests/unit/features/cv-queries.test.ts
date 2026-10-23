@@ -87,22 +87,52 @@ describe("CV document queries", () => {
       },
     });
 
-    expect(await listCvDocuments()).toEqual([
-      {
-        id: CV_ID,
-        name: "Développeuse",
-        locale: "fr",
-        updatedAt: "2026-10-21T09:00:00Z",
-        createdFromTemplateName: "Engineering",
-        missingTranslations: missingInFrench,
-        warnings: expect.any(Number),
-      },
-    ]);
+    expect(await listCvDocuments()).toEqual({
+      items: [
+        {
+          id: CV_ID,
+          name: "Développeuse",
+          locale: "fr",
+          updatedAt: "2026-10-21T09:00:00Z",
+          createdFromTemplateName: "Engineering",
+          missingTranslations: missingInFrench,
+          warnings: expect.any(Number),
+        },
+      ],
+      total: 1,
+    });
     const query = fake.queriesOn("cv_documents")[0];
     expect(isOwnerScoped(query)).toBe(true);
     expect(callsOf(query, "is")).toContainEqual(["deleted_at", null]);
     expect(callsOf(query, "order")).toContainEqual(["updated_at", { ascending: false }]);
     expect(callsOf(query, "limit")).toEqual([[200]]);
+  });
+
+  it("reports how many CVs exist beyond the ones listed", async () => {
+    const fake = signIn({
+      tables: {
+        cv_documents: {
+          data: [
+            {
+              id: CV_ID,
+              name: "Recent",
+              locale: "en",
+              definition,
+              updated_at: "2026-10-21T09:00:00Z",
+              created_from_template_name: null,
+            },
+          ],
+          count: 240,
+        },
+      },
+    });
+
+    const library = await listCvDocuments();
+    expect(library.items).toHaveLength(1);
+    expect(library.total).toBe(240);
+    expect(callsOf(fake.queriesOn("cv_documents")[0], "select")[0]?.[1]).toEqual({
+      count: "exact",
+    });
   });
 
   it("raises a DataAccessError when the list cannot be read", async () => {

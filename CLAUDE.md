@@ -1,7 +1,7 @@
 # CLAUDE.md — CVStudio
 
 > Coding-agent operating instructions. Read this file and `README.md` before planning or changing code.
-> Status: **Phases 1–4 implemented** (foundation, owner auth + RLS migrations, career-data CRUD, CV Builder with live A4 preview), plus saved templates (presets, copy-on-apply) and print/PDF download. PDF is verified locally only: the Vercel PDF path is untested. Hardening is next.
+> Status: **Phases 1–4 implemented** (foundation, owner auth + RLS migrations, career-data CRUD, CV Builder with live A4 preview), plus saved templates (presets, copy-on-apply) and print/PDF download, verified locally and in production on Vercel. Hardening is in progress. AI phase (§16), step 1: job posts and the ATS match score are implemented (PR 1), with Groq as the primary provider and Gemini as the fallback (2026-10-23); the Job Match panel in the CV Builder (PR 2) is next.
 
 ## 1. Product mission
 
@@ -9,7 +9,7 @@
 
 The owner maintains structured career data once in Supabase, then composes French or English CVs from that data. Each CV can choose its sections, subsections, records, ordering, presentation, and per-CV wording. The owner can preview, print, download PDF, and save/manage reusable CV templates.
 
-**MVP = entirely manual and deterministic. NO AI.** Do not add LLM APIs, AI SDKs, auto-writing, auto-translation, scoring, or speculative AI abstractions. AI may be considered in a separately approved future phase.
+**The MVP is manual and deterministic.** On 2026-10-22 the owner approved an AI phase limited to the features and rules in §16 (job-post match score, then CVs tailored to a job post, then translation suggestions). Do not add any other AI feature (unreviewed writing, silent auto-translation, AI-judged scores, cover letters) or speculative AI abstractions without a new approval.
 
 ## 2. Non-negotiable priorities (in order)
 
@@ -69,7 +69,7 @@ Important: one-page output is preferred when content fits, **not** a forced limi
 
 ### Explicitly out of MVP
 
-- AI-assisted writing, rewriting, translation, summarization, ATS scoring, or job-post matching.
+- AI features beyond the approved AI phase (§16), such as cover letters, AI-judged scores, importing job posts from URLs, or any unreviewed writing or translation.
 - Public sign-up or multi-tenant SaaS billing.
 - Public CV-sharing URLs and uncontrolled public personal-data access.
 - Dozens of visual themes. Ship **one reference-based design** first; saved presets are distinct from visual themes.
@@ -174,7 +174,7 @@ Prefer canonical entity tables with `owner_id` and stable UUIDs:
 
 CV compositions and presets may hold a **versioned, validated JSONB definition** for ordering, visibility, selections, and overrides. Define a strict Zod schema with stable node IDs, `schema_version`, and discriminated node types; do not persist arbitrary unvalidated JSON. Separate canonical relational data from composition state. Document deletion and migration semantics.
 
-For localized content, consistently model English/French variants (e.g., typed `localized_content` JSONB with `{ en, fr }` keys). Keep language-independent facts (dates, URLs, sort positions) outside translations. Translation data is manual for MVP.
+For localized content, consistently model English/French variants (e.g., typed `localized_content` JSONB with `{ en, fr }` keys). Keep language-independent facts (dates, URLs, sort positions) outside translations. Translation data is written by the owner; AI translation suggestions (§16) are stored only once the owner accepts them.
 
 When CV data is edited, specify whether the document reads the latest master data or uses a frozen snapshot. **Default: live canonical data + explicit per-CV overrides**; exporting should resolve a consistent snapshot for that operation. Templates should be copy-on-apply.
 
@@ -215,7 +215,7 @@ Do not guess final SQL schema from this outline. Design indexes, constraints, fo
 - Use locale dictionaries, not hard-coded UI copy or duplicated full React pages.
 - Content (job descriptions, education details, project descriptions, section titles) may differ by language and must be owner-editable separately.
 - Show a clear **Missing translation** state when selected content lacks the requested locale. Never imply that switching the UI locale automatically translates stored descriptions.
-- No automatic AI translation. Do not silently export mixed-language required content; warn and require an explicit fallback decision for optional content.
+- No automatic translation: an AI translation is a suggestion the owner reviews and accepts text by text (§16), never applied on its own. Do not silently export mixed-language required content; warn and require an explicit fallback decision for optional content.
 - Keep date-only/month-year values free from timezone conversion artifacts; format dates for the selected locale at render time.
 - Switching document language should not delete language-specific content or alter another saved document.
 
@@ -281,6 +281,26 @@ Acceptance examples:
 7. If requirements conflict, **user's current explicit request wins**, then `README.md` product requirements, then this file's implementation guidance. Surface any consequential conflict.
 8. Security and UI/UX are part of every task—not optional follow-up polish.
 
-## 16. Future AI phase (planning note only)
+## 16. AI phase (approved 2026-10-22)
 
-AI could later assist with rewriting bullets, translation suggestions, job matching, or ATS-oriented feedback. It must remain strictly **opt-in**, allow owner review of each suggestion, never alter canonical data without approval, and respect CV privacy. **Do not implement any of this in the MVP.**
+Approved features, in build order (owner decisions of 2026-10-22):
+
+1. **Job post and ATS match score.** The owner pastes a job post (text only, no URL import). The AI provider extracts its requirements once (skills, tools, languages, education, experience; required or preferred), and the owner can edit them. The app then scores CVs against them with a deterministic keyword match: no AI call per check. Built in two PRs: PR 1 (AI infrastructure, Settings, Jobs pages, scores on the job page; done) and PR 2 (Job Match in the CV Builder: live score, the CV's job post, visibility suggestions). Scoring rules and formula: `src/features/job-posts/matching.ts` and README.
+2. **CV tailored to a job post.** The AI provider proposes a new draft CV from career data: which records to include, their order, and per-CV wording (title, summary, bullets) in the CV's language. This replaces the separate bullet-rewording feature.
+3. **Translation suggestions** (French ↔ English) for missing translations.
+
+Anything else (cover letters, AI-judged scores, URL import, summaries outside a tailored CV) needs a new approval. Plan each feature (schema, UI, API, tests) and get the plan approved before building it.
+
+Rules for every AI feature:
+
+- **Providers:** Groq first and the Google Gemini API as the fallback (owner's decision, 2026-10-23; `AI_PRIMARY_PROVIDER` swaps them), called only from server code (Server Actions, Route Handlers) through the server-only modules of `src/lib/ai`, behind one provider interface. Features never call a provider directly. `GROQ_API_KEY` and `GEMINI_API_KEY` are server-only: never `NEXT_PUBLIC_*`, never logged, never in error responses or client bundles.
+- **Fallback:** only when the provider itself is unavailable (timeout, rate limit, a request too large for its plan, overload, no connection), never for a refused key or request, an unusable answer or our own validation. However many providers it tries, a request counts once toward the daily cap; each provider tried is recorded apart (`ai_request_attempts`).
+- **Opt-in:** off until the owner turns it on in Settings. Nothing is sent to Google until the owner asks for a suggestion.
+- **Review:** every suggestion is shown next to its source and is editable. Nothing reaches career data or an export until the owner accepts it: AI-written CV text stays marked, and blocks export, until the owner accepts, edits or reverts it. Accepting never overwrites text the owner wrote. Canonical career data changes only through an explicit owner action.
+- **Honesty:** the AI only uses facts from the owner's career data. It never adds skills, experience, employers or results the owner did not enter; requirements the career data lacks are reported as missing.
+- **Score:** label the match score as an estimate of keyword coverage, never as the score a real employer's ATS would give.
+- **Privacy:** send only what the feature needs: the job post for analysis, career texts for tailoring, the texts to translate for translation. Never the name, contacts, photo or links. Requires a paid (billing-enabled) Gemini key: Google's terms forbid personal data on the free tier, where prompts may be used for training and read by human reviewers. Send `store: false` on the Interactions API, which otherwise keeps every request for 55 days. Groq does not train on what it receives (Services Agreement §4.2) but may keep logs for up to 30 days unless Zero Data Retention is turned on in its console; it has no per-request setting for this.
+- **Limits and authorization:** owner check on every call, input size limits, and a per-owner daily cap enforced on the server.
+- **Untrusted input and output:** job posts and the texts sent are data, not instructions (a post may hide text aimed at AI tools). Validate model output with Zod before showing it and render it as plain text.
+- **Tests never call Groq or Gemini**; they use fake providers that cannot be enabled in production.
+- No AI in the renderer, print or PDF paths. Missing translations still block export until the owner resolves them.

@@ -50,6 +50,8 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: supabase.url,
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabase.publishableKey,
       APP_TIME_ZONE: "UTC",
+      // AI answers come from the local fake: the suite never calls Google.
+      AI_FAKE_PROVIDER: "1",
     },
   },
 });

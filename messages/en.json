@@ -23,6 +23,7 @@
     "overview": "Overview",
     "careerData": "Career data",
     "cvs": "CVs",
+    "jobs": "Job match",
     "templates": "Templates",
     "settings": "Settings",
     "newCv": "New CV",
@@ -31,9 +32,11 @@
       "overview": "Overview",
       "careerData": "Data",
       "cvs": "CVs",
+      "jobs": "Match",
       "templates": "Templates",
       "settings": "Settings"
-    }
+    },
+    "accountMenu": "Account menu"
   },
   "localeSwitcher": {
     "label": "Interface language",
@@ -66,6 +69,21 @@
     "noMonth": "Year only",
     "noYear": "Select a year",
     "clear": "Clear date"
+  },
+  "termsInput": {
+    "placeholder": "Type a name, then Enter",
+    "add": "Add",
+    "remove": "Remove “{term}”",
+    "duplicate": "Already listed: {term}",
+    "limit": "Up to {max, number} names."
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "page": "Page {page, number}",
+    "pageOf": "Page {page, number} of {count, number}"
   },
   "errors": {
     "boundary": {
@@ -410,7 +428,7 @@
     "deleteDescription": "The CV disappears from your lists. Your career data and templates are not affected.",
     "new": {
       "title": "New CV",
-      "description": "A CV starts with all your current career data in the reference order. Then choose what to keep for this application.",
+      "description": "Choose a template and a language. The CV is filled from your current career data; then keep what fits this application.",
       "back": "CVs",
       "name": "Name",
       "nameHint": "Only you see it. Name it after the role or company.",
@@ -433,14 +451,18 @@
         "unavailable": "The CV couldn’t be created. Check your connection and try again."
       },
       "independent": "A separate document, built from your career data. Make it your own next.",
-      "startFrom": {
-        "label": "Start from",
-        "careerData": "Your career data",
-        "careerDataHint": "Every active entry, in the reference order.",
-        "templateHint": "A saved template.",
-        "templateLanguage": "Saved in {language}",
-        "templateNote": "The CV copies the template’s sections, order and wording, filled with your latest career data. Entries added since the template was saved aren’t included: add them in the CV."
-      }
+      "template": {
+        "label": "Template",
+        "classic": "Classic",
+        "classicHint": "Your reference layout with every active entry of your career data.",
+        "builtIn": "Included",
+        "classicNote": "The CV starts with all your current career data, in the reference order. Then keep what fits this application.",
+        "makeYourOwn": "Your own templates will appear here. To save one, open a CV and choose More actions → Save as template.",
+        "savedHint": "A saved template.",
+        "savedLanguage": "Saved in {language}",
+        "savedNote": "The CV copies the template’s sections, order and wording, filled with your latest career data. Entries added since the template was saved aren’t included: add them in the CV."
+      },
+      "forJob": "For the job post “{title}”: named after it and in its language. Its page then shows how well this CV covers it."
     },
     "library": {
       "title": "Your documents",
@@ -453,7 +475,11 @@
       "results": "{count, plural, one {# CV found} other {# CVs found}}",
       "noResults": "No CVs match this view",
       "noResultsHint": "Try a different name or show all your documents.",
-      "reset": "Show all CVs"
+      "reset": "Show all CVs",
+      "range": "{from, number}–{to, number} of {total, number}",
+      "pages": "Pages of your CVs",
+      "pageLabel": "Your CVs, page {page, number} of {count, number}",
+      "truncated": "Only your {shown, number} most recently edited CVs are listed ({total, number} in all)."
     }
   },
   "cv": {
@@ -862,6 +888,319 @@
       }
     }
   },
+  "jobs": {
+    "title": "Job match",
+    "description": "Paste a job post, then see which of its requirements your career covers and which CV fits it best.",
+    "add": "Add a job post",
+    "empty": {
+      "title": "No job posts yet",
+      "description": "Paste a job post to see which of your CVs covers its requirements, keyword by keyword.",
+      "hint": "AI can read the post for you, or you can type the requirements yourself."
+    },
+    "breadcrumb": {
+      "new": "New job post",
+      "detail": "Job post"
+    },
+    "languages": {
+      "en": "English",
+      "fr": "French",
+      "other": "Other language"
+    },
+    "list": {
+      "title": "Your job posts",
+      "noRequirements": "No requirements yet",
+      "best": "Best match {score, number}% · {cv}",
+      "noCv": "No CV to compare yet",
+      "updated": "Updated {date}",
+      "moreActions": "More actions for {title}",
+      "open": "Open",
+      "delete": "Delete",
+      "deleteTitle": "Delete “{title}”?",
+      "deleteDescription": "The job post and its requirements leave your list. Your CVs and career data are not affected.",
+      "deleted": "“{title}” deleted",
+      "undo": "Undo",
+      "actionFailed": "That didn’t work. Nothing was changed.",
+      "requiredCount": "{count, plural, one {# required} other {# required}}",
+      "preferredCount": "{count, plural, one {# nice to have} other {# nice to have}}",
+      "career": "Your career {score, number}%"
+    },
+    "new": {
+      "title": "New job post",
+      "description": "Paste the job ad, then check what it asks for before you save it.",
+      "back": "Job match",
+      "pasteLabel": "Job post",
+      "pasteHint": "The full text of the ad: the role, what is required and what is a plus.",
+      "counter": "{count, number} / {max, number} characters",
+      "analyze": "Analyze with AI",
+      "analyzing": "Reading the job post…",
+      "manual": "Enter requirements myself",
+      "tooShort": "Paste at least {min, number} characters of the post to analyze it.",
+      "privacy": "Only this text is sent to {provider}; your CVs and career data stay here.",
+      "privacyFallback": "Only this text is sent to {primary}, or to {fallback} when {primary} is unavailable; your CVs and career data stay here.",
+      "remaining": "{count, plural, one {# analysis left today.} other {# analyses left today.}}",
+      "aiOff": "AI analysis is off. Turn it on in Settings, or enter the requirements yourself.",
+      "aiUnavailable": "AI analysis isn’t set up on the server. You can enter the requirements yourself.",
+      "limit": "You’ve used today’s AI requests. The count resets at {time}; raise the limit in Settings or enter the requirements yourself.",
+      "settingsLink": "Open Settings",
+      "fakeBadge": "Test provider",
+      "reviewTitle": "Check what the AI found",
+      "reviewDescription": "{count, plural, =0 {The AI found no requirements in this text. Add them below, then save.} one {The AI found # requirement. Correct the name, remove it if it doesn’t apply and mark the must-haves, then save.} other {The AI found # requirements. Correct the names, remove what doesn’t apply and mark the must-haves, then save.}}"
+    },
+    "editor": {
+      "backTo": "Job match",
+      "details": "The job",
+      "detailsHint": "Its title and company, and the other titles the job-title check looks for.",
+      "jobTitle": "Job title",
+      "company": "Company",
+      "language": "Language of the post",
+      "titleAliases": "Other titles for this job",
+      "titleAliasesHint": "The job-title check also looks for these, for example the title in the other language.",
+      "requirements": "Requirements",
+      "requirementsHint": "What the job asks for. A CV covers a requirement when it shows its name or one of its other names.",
+      "analyzeAgain": "Analyze again",
+      "reanalyzeTitle": "Analyze the job post again?",
+      "reanalyzeDescription": "The AI reads the text of the post again, and its results replace the requirements in this form. Nothing is saved until you save.",
+      "reanalyzeConfirm": "Analyze again",
+      "reanalyzed": "New requirements from the AI. Check them, then save to update the scores.",
+      "fakeProvider": "(Test provider: no AI service was called.)",
+      "analyzedOn": "Requirements found by AI on {date}, reviewed by you.",
+      "postText": "Job post text",
+      "postTextHint": "Kept with the job post, so you can analyze it again.",
+      "postTextLabel": "Text of the post",
+      "counter": "{count, number} / {max, number} characters",
+      "savedToast": "Job post saved",
+      "createdToast": "Job post saved",
+      "errors": {
+        "invalid_input": "Some fields need attention. Check the highlighted fields.",
+        "stale": "This job post was changed elsewhere. Reload before saving.",
+        "not_found": "This job post no longer exists. It may have been deleted elsewhere.",
+        "unauthorized": "Your session has ended. Sign in again to save.",
+        "unavailable": "Couldn’t save. Check your connection and try again; your edits are kept."
+      }
+    },
+    "requirements": {
+      "summary": "{total, plural, =0 {No requirements} one {# requirement} other {# requirements}} · {required, number} required",
+      "empty": "No requirements yet. Add what the job asks for: one skill, tool, language or degree at a time.",
+      "add": "Add a requirement",
+      "limit": "Up to {max, number} requirements.",
+      "item": "Requirement {index, number}",
+      "label": "Requirement",
+      "labelPlaceholder": "e.g. React",
+      "importance": "Importance",
+      "importanceOf": "Importance of {name}",
+      "required": "Required",
+      "preferred": "Nice to have",
+      "kind": "Type",
+      "kinds": {
+        "skill": "Skill",
+        "tool": "Tool",
+        "language": "Language",
+        "education": "Education",
+        "certification": "Certification",
+        "experience": "Domain",
+        "soft_skill": "Soft skill",
+        "other": "Other"
+      },
+      "aliases": "Other names",
+      "aliasesPlaceholder": "e.g. React.js, then Enter",
+      "note": "Note",
+      "optional": "Optional",
+      "notePlaceholder": "e.g. 3+ years",
+      "remove": "Remove {name}",
+      "kindOf": "Type of {name}",
+      "noteOf": "Note on {name}"
+    },
+    "match": {
+      "title": "How your CVs match",
+      "description": "Estimated keyword coverage: how many of this job’s requirements each CV shows. It is not the score of a real applicant tracking system; each employer’s differs.",
+      "unsavedNote": "The scores use the saved requirements. Save to update them.",
+      "noCvs": "No CVs yet. Create one to see how it covers this job.",
+      "createCv": "Create a CV",
+      "noRequirements": "Add requirements to score your CVs.",
+      "unreadable": "This CV’s layout couldn’t be read.",
+      "noScore": "No score",
+      "score": "{score, number}%",
+      "scoreLabel": "Estimated keyword coverage: {score, number} percent",
+      "hiddenCount": "{count, plural, one {# more in your career data} other {# more in your career data}}",
+      "titleFound": "Job title found",
+      "titleMissing": "Job title not found",
+      "titleHint": "Looked for in the CV title and the experience roles.",
+      "showDetails": "Details",
+      "hideDetails": "Hide details",
+      "openCv": "Open CV",
+      "groups": {
+        "matched": "Found in this CV ({count, number})",
+        "hidden": "In your career data, not shown in this CV ({count, number})",
+        "missing": "Not found ({count, number})"
+      },
+      "groupHints": {
+        "matched": "Where the CV shows each one.",
+        "hidden": "No visible part of this CV shows them. Show the entry, or reword it for this CV, if it’s relevant.",
+        "missing": "Not in your career data either. Add them there only if they’re true."
+      },
+      "header": "Header",
+      "fields": {
+        "headerTitle": "CV title",
+        "summary": "Summary",
+        "sectionTitle": "Heading",
+        "skillGroup": "Skill group",
+        "skill": "Skill",
+        "role": "Role",
+        "entryTitle": "Title",
+        "organization": "Organization",
+        "place": "Location",
+        "bullet": "Achievement",
+        "paragraph": "Description",
+        "technology": "Technology",
+        "listItem": "Item",
+        "listDetail": "Level",
+        "subsectionTitle": "Subsection",
+        "customLabel": "Label",
+        "customText": "Text"
+      },
+      "records": {
+        "profile": "Profile",
+        "skills": "Technical skills",
+        "experience": "Experience",
+        "education": "Education",
+        "projects": "Projects",
+        "certifications": "Certifications",
+        "soft_skills": "Soft skills",
+        "languages": "Languages",
+        "custom": "Custom section"
+      },
+      "howTitle": "How the score works",
+      "how": {
+        "once": "Each requirement counts once, however often its name appears.",
+        "weights": "Required items count double: the score is the weight found divided by the total weight.",
+        "visible": "Only what this CV shows counts, with its per-CV wording. Hidden entries and bullets don’t.",
+        "words": "Names match as whole words, without accents or capitals: “Java” isn’t found in “JavaScript”, nor “React” in “React Native”. The other names you list count too.",
+        "title": "The job-title check is shown separately and isn’t part of the score.",
+        "estimate": "It estimates keyword coverage. Real applicant tracking systems differ from one employer to another."
+      },
+      "showDetailsFor": "Details: {cv}",
+      "hideDetailsFor": "Hide details: {cv}",
+      "openCvFor": "Open CV: {cv}",
+      "countsRequired": "required {matched, number}/{total, number}",
+      "countsPreferred": "nice to have {matched, number}/{total, number}",
+      "showAll": "Show all {count, number} CVs",
+      "showFewer": "Show the best 5",
+      "best": "Best match"
+    },
+    "createCv": "Create a CV for this job",
+    "career": {
+      "title": "Your career and this job",
+      "description": "Estimated keyword coverage of all your career data, shown in a CV or not: what you can put forward for this job.",
+      "noRequirements": "Add requirements below to compare them with your career data.",
+      "covers": "{matched, number} of {total, number} {total, plural, one {requirement} other {requirements}} found in your career data",
+      "have": "In your career data ({count, number})",
+      "haveNone": "None of these requirements appears in your career data yet.",
+      "lack": "Not in your career data ({count, number})",
+      "lackNone": "Your career data mentions every requirement.",
+      "lackHint": "Add them only if they’re true: a CV can’t show what you haven’t done.",
+      "openCareerData": "Open career data",
+      "showWhere": "Show where each one is",
+      "hideWhere": "Hide where each one is",
+      "whereTitle": "Where each one appears",
+      "whereHint": "Where your career data mentions each requirement, in any language."
+    }
+  },
+  "ai": {
+    "providers": {
+      "groq": "Groq",
+      "gemini": "Gemini"
+    },
+    "settings": {
+      "title": "AI features",
+      "description": "AI can read a job post and list its requirements. It stays off until you turn it on.",
+      "providers": "Providers",
+      "roles": {
+        "primary": "Primary provider",
+        "fallback": "Fallback provider"
+      },
+      "status": {
+        "ready": "Ready · {model}",
+        "fake": "Test provider",
+        "unavailable": "Not set up"
+      },
+      "fakeNote": "Test providers answer instead: no request leaves the server.",
+      "reasons": {
+        "missing_key": "Add {key} to the server’s environment variables to use it.",
+        "invalid_key": "{key} doesn’t look like an API key. Check the value on the server.",
+        "invalid_model": "GROQ_MODEL isn’t a valid model name. Check the value on the server.",
+        "debug_logging": "GOOGLE_GENAI_DEBUG is set on the server: it would write job posts to the logs. Remove it to use Gemini.",
+        "invalid_primary": "AI_PRIMARY_PROVIDER must be groq or gemini. Check the value on the server."
+      },
+      "fallbackHint": "{fallback} answers only when {primary} is busy, rate-limited or too slow. An analysis counts once toward the daily limit, even when both are tried.",
+      "lastAnalysis": "Last analysis",
+      "lastAnalysisValue": "{model} ({provider}) · {date}",
+      "lastAnalysisFallback": "{model} ({provider}, as the fallback) · {date}",
+      "lastAnalysisNone": "No analysis yet.",
+      "enable": "Use AI to analyze job posts",
+      "enableHint": "When you press Analyze, the text of the job post is sent to {provider}. Your CVs and career data are not sent.",
+      "enableHintFallback": "When you press Analyze, the text of the job post is sent to {primary}, or to {fallback} when {primary} is unavailable. Your CVs and career data are not sent.",
+      "enableHintNone": "When you press Analyze, only the text of the job post is sent to an AI provider. Your CVs and career data are not sent.",
+      "dailyLimit": "Daily limit",
+      "dailyLimitHint": "AI requests per day, from {min, number} to {max, number}. Failed requests count too. The count resets every day at {time}.",
+      "limitError": "Choose a whole number from {min, number} to {max, number}.",
+      "save": "Save AI settings",
+      "saving": "Saving…",
+      "saved": "AI settings saved",
+      "saveFailed": "Couldn’t save the AI settings. Check your connection and try again.",
+      "groqData": "Groq doesn’t use what you send to train models and keeps no copy by default, apart from logs it may hold for up to 30 days. Turn on Zero Data Retention in the Groq console’s Data Controls to stop those logs too.",
+      "paidKey": "For Gemini, use an API key from a Google Cloud project with billing turned on. On the free tier, Google may use what you send to improve its products, and people may read it.",
+      "usage": "Today",
+      "usageCount": "{used, number} of {limit, number} requests",
+      "monthCost": "Estimated cost this month",
+      "monthCostValue": "{cost} · {count, plural, one {# request} other {# requests}}",
+      "costNote": "Estimated from the token counts each provider reports and its list prices; a free-tier key isn’t billed. The providers’ bills are the reference.",
+      "recent": "Recent requests",
+      "recentEmpty": "No AI requests yet.",
+      "tokens": "{count, number} tokens",
+      "attemptFailed": "{provider} ({reason})",
+      "features": {
+        "job_post_analysis": "Job post analysis"
+      },
+      "statuses": {
+        "pending": "Running",
+        "succeeded": "Succeeded",
+        "failed": "Failed"
+      },
+      "failures": {
+        "timeout": "took too long",
+        "rate_limited": "rate limit",
+        "too_large": "post too long",
+        "overloaded": "busy",
+        "unavailable": "unreachable",
+        "rejected": "request refused",
+        "auth": "API key refused",
+        "invalid_response": "unusable answer",
+        "abandoned": "interrupted",
+        "unknown": "unknown error"
+      }
+    },
+    "errors": {
+      "ai_not_configured": "AI isn’t set up on the server. You can enter the requirements yourself.",
+      "ai_disabled": "AI is off. Turn it on in Settings to analyze job posts.",
+      "ai_limit_reached": "You’ve used today’s AI requests. Raise the limit in Settings or try again tomorrow.",
+      "ai_busy": "Another analysis is still running. Try again in a moment.",
+      "ai_timeout": "{provider} took too long to answer. Try again; a shorter text helps.",
+      "ai_rate_limited": "{provider} is limiting requests right now. Wait a minute and try again.",
+      "ai_too_large": "{provider} can’t take a job post this long on its current plan. Shorten the text, or enter the requirements yourself.",
+      "ai_overloaded": "{provider} is busy right now. Wait a minute and try again.",
+      "ai_unavailable": "{provider} couldn’t be reached. Check your connection and try again.",
+      "ai_rejected": "{provider} refused this text. Check it, or enter the requirements yourself.",
+      "ai_key_rejected": "{providerId, select, groq {Groq refused the API key. Check GROQ_API_KEY on the server.} gemini {Google refused the API key. Check GEMINI_API_KEY and the project’s billing.} other {{provider} refused the API key. Check it on the server.}}",
+      "ai_invalid_response": "{provider}’s answer couldn’t be used. Try again.",
+      "ai_providers_unavailable": "Neither AI provider could answer right now: both were busy or too slow. Wait a minute and try again, or enter the requirements yourself.",
+      "ai_failed": "The AI request failed. Try again in a moment.",
+      "invalid_input": "Paste more of the job post, then try again.",
+      "stale": "Something changed in the meantime. Try again.",
+      "not_found": "This job post no longer exists.",
+      "unauthorized": "Your session has ended. Sign in again to continue.",
+      "unavailable": "Something went wrong on our side. Try again in a moment."
+    }
+  },
   "settings": {
     "title": "Settings",
     "description": "Preferences for this workspace.",
@@ -923,7 +1262,9 @@
     "endBeforeStart": "The end date is before the start date.",
     "tooMany": "There are too many items here.",
     "invalidLocalizedText": "Choose either one text for both languages or separate translations.",
-    "invalid": "Check this field."
+    "invalid": "Check this field.",
+    "tooShort": "This is too short.",
+    "duplicateTerm": "This name is already used by another requirement, or twice here."
   },
   "studio": {
     "workspace": "My workspace",

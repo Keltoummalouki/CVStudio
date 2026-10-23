@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { ArrowLeftIcon, InfoIcon } from "lucide-react";
 import { getLocale, getTranslations } from "next-intl/server";
+import { z } from "zod";
 import { PageContainer, PageHeader, Panel } from "@/components/layout/page";
 import { Button } from "@/components/ui/button";
 import { getCareerSummary } from "@/features/career-data/server/queries";
 import { NewCvForm } from "@/features/cv-documents/components/new-cv-form";
 import { TEMPLATE_QUERY_PARAM } from "@/features/cv-templates/routes";
 import { listTemplateChoices } from "@/features/cv-templates/server/queries";
+import { JOB_QUERY_PARAM } from "@/features/job-posts/routes";
+import { findJobPostChoice } from "@/features/job-posts/server/queries";
 import { isLocale } from "@/lib/i18n/config";
 import { Link } from "@/lib/i18n/navigation";
 
@@ -18,12 +21,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page({ searchParams }: Props) {
-  const [t, summary, locale, templates, query] = await Promise.all([
+  const query = await searchParams;
+  // A CV made for a job post (its page links here): only one of the owner's own posts counts.
+  const requestedJob = query[JOB_QUERY_PARAM];
+  const jobId = typeof requestedJob === "string" ? z.uuid().safeParse(requestedJob) : null;
+  const [t, summary, locale, templates, job] = await Promise.all([
     getTranslations("cvs.new"),
     getCareerSummary(),
     getLocale(),
     listTemplateChoices(),
-    searchParams,
+    jobId?.success ? findJobPostChoice(jobId.data) : null,
   ]);
   const { profileStarted, ...counts } = summary;
   const hasRecords = Object.values(counts).some((count) => count > 0);
@@ -61,6 +68,7 @@ export default async function Page({ searchParams }: Props) {
           defaultLocale={isLocale(locale) ? locale : "en"}
           templates={templates}
           initialTemplateId={initialTemplateId}
+          job={job}
         />
       </Panel>
     </PageContainer>

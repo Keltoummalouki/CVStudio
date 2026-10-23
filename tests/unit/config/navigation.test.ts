@@ -4,7 +4,11 @@ import {
   CAREER_SECTION_KINDS,
   BUILT_IN_SECTION_COUNT,
 } from "@/config/career-sections";
-import { PRIMARY_NAVIGATION, isNavigationItemActive } from "@/config/navigation";
+import {
+  MOBILE_TAB_NAVIGATION,
+  PRIMARY_NAVIGATION,
+  isNavigationItemActive,
+} from "@/config/navigation";
 
 function item(id: string) {
   const found = PRIMARY_NAVIGATION.find((entry) => entry.id === id);
@@ -35,10 +39,26 @@ describe("isNavigationItemActive", () => {
   });
 
   it("marks exactly one destination active for any dashboard path", () => {
-    for (const path of ["/dashboard", "/dashboard/content/skills", "/dashboard/settings"]) {
+    for (const path of [
+      "/dashboard",
+      "/dashboard/content/skills",
+      "/dashboard/jobs/new",
+      "/dashboard/settings",
+    ]) {
       const active = PRIMARY_NAVIGATION.filter((entry) => isNavigationItemActive(entry, path));
       expect(active, path).toHaveLength(1);
     }
+    expect(isNavigationItemActive(item("jobs"), "/dashboard/jobs/123")).toBe(true);
+  });
+
+  it("gives phones five destinations: Settings lives in the account menu", () => {
+    expect(MOBILE_TAB_NAVIGATION.map((entry) => entry.id)).toEqual([
+      "overview",
+      "careerData",
+      "cvs",
+      "jobs",
+      "templates",
+    ]);
   });
 });
 

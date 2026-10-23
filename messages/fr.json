@@ -23,6 +23,7 @@
     "overview": "Vue d’ensemble",
     "careerData": "Données de carrière",
     "cvs": "CV",
+    "jobs": "Correspondance",
     "templates": "Modèles",
     "settings": "Réglages",
     "newCv": "Nouveau CV",
@@ -31,9 +32,11 @@
       "overview": "Accueil",
       "careerData": "Données",
       "cvs": "CV",
+      "jobs": "Offres",
       "templates": "Modèles",
       "settings": "Réglages"
-    }
+    },
+    "accountMenu": "Menu du compte"
   },
   "localeSwitcher": {
     "label": "Langue de l’interface",
@@ -66,6 +69,21 @@
     "noMonth": "Année seule",
     "noYear": "Choisir une année",
     "clear": "Effacer la date"
+  },
+  "termsInput": {
+    "placeholder": "Saisissez un nom, puis Entrée",
+    "add": "Ajouter",
+    "remove": "Retirer « {term} »",
+    "duplicate": "Déjà dans la liste : {term}",
+    "limit": "Jusqu’à {max, number} noms."
+  },
+  "pagination": {
+    "previous": "Précédent",
+    "next": "Suivant",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "page": "Page {page, number}",
+    "pageOf": "Page {page, number} sur {count, number}"
   },
   "errors": {
     "boundary": {
@@ -410,7 +428,7 @@
     "deleteDescription": "Le CV disparaît de vos listes. Vos données de carrière et vos modèles ne sont pas touchés.",
     "new": {
       "title": "Nouveau CV",
-      "description": "Un CV démarre avec toutes vos données de carrière actuelles, dans l’ordre de référence. Choisissez ensuite ce que vous gardez pour cette candidature.",
+      "description": "Choisissez un modèle et une langue. Le CV est rempli avec vos données de carrière actuelles. Gardez ensuite ce qui convient à cette candidature.",
       "back": "CV",
       "name": "Nom",
       "nameHint": "Il n’est visible que par vous. Nommez-le d’après le poste ou l’entreprise.",
@@ -433,14 +451,18 @@
         "unavailable": "Le CV n’a pas pu être créé. Vérifiez votre connexion et réessayez."
       },
       "independent": "Un document indépendant, composé à partir de vos données de carrière. Personnalisez-le ensuite.",
-      "startFrom": {
-        "label": "Partir de",
-        "careerData": "Vos données de carrière",
-        "careerDataHint": "Toutes les entrées actives, dans l’ordre de référence.",
-        "templateHint": "Un modèle enregistré.",
-        "templateLanguage": "Enregistré en {language}",
-        "templateNote": "Le CV copie les sections, l’ordre et les formulations du modèle, remplis avec vos données de carrière les plus récentes. Les entrées ajoutées depuis l’enregistrement du modèle ne sont pas incluses : ajoutez-les dans le CV."
-      }
+      "template": {
+        "label": "Modèle",
+        "classic": "Classique",
+        "classicHint": "Votre mise en page de référence avec toutes les entrées actives de vos données de carrière.",
+        "builtIn": "Inclus",
+        "classicNote": "Le CV démarre avec toutes vos données de carrière actuelles, dans l’ordre de référence. Gardez ensuite ce qui convient à cette candidature.",
+        "makeYourOwn": "Vos propres modèles apparaîtront ici. Pour en enregistrer un, ouvrez un CV et choisissez Autres actions → Enregistrer comme modèle.",
+        "savedHint": "Un modèle enregistré.",
+        "savedLanguage": "Enregistré en {language}",
+        "savedNote": "Le CV copie les sections, l’ordre et les formulations du modèle, remplis avec vos données de carrière les plus récentes. Les entrées ajoutées depuis l’enregistrement du modèle ne sont pas incluses : ajoutez-les dans le CV."
+      },
+      "forJob": "Pour l’offre « {title} » : nommé d’après elle et dans sa langue. Sa page montre ensuite dans quelle mesure ce CV y répond."
     },
     "library": {
       "title": "Vos documents",
@@ -453,7 +475,11 @@
       "results": "{count, plural, one {# CV trouvé} other {# CV trouvés}}",
       "noResults": "Aucun CV dans cette vue",
       "noResultsHint": "Essayez un autre nom ou affichez tous vos documents.",
-      "reset": "Afficher tous les CV"
+      "reset": "Afficher tous les CV",
+      "range": "{from, number}–{to, number} sur {total, number}",
+      "pages": "Pages de vos CV",
+      "pageLabel": "Vos CV, page {page, number} sur {count, number}",
+      "truncated": "Seuls vos {shown, number} CV modifiés le plus récemment sont listés ({total, number} au total)."
     }
   },
   "cv": {
@@ -862,6 +888,319 @@
       }
     }
   },
+  "jobs": {
+    "title": "Correspondance",
+    "description": "Collez une offre d’emploi, puis voyez quelles exigences votre parcours couvre et quel CV y répond le mieux.",
+    "add": "Ajouter une offre",
+    "empty": {
+      "title": "Aucune offre pour l’instant",
+      "description": "Collez une offre d’emploi pour voir lesquels de vos CV couvrent ses exigences, mot-clé par mot-clé.",
+      "hint": "L’IA peut lire l’offre pour vous, ou vous pouvez saisir les exigences vous-même."
+    },
+    "breadcrumb": {
+      "new": "Nouvelle offre",
+      "detail": "Offre"
+    },
+    "languages": {
+      "en": "Anglais",
+      "fr": "Français",
+      "other": "Autre langue"
+    },
+    "list": {
+      "title": "Vos offres",
+      "noRequirements": "Aucune exigence pour l’instant",
+      "best": "Meilleur CV {score, number} % · {cv}",
+      "noCv": "Aucun CV à comparer pour l’instant",
+      "updated": "Modifiée le {date}",
+      "moreActions": "Plus d’actions pour {title}",
+      "open": "Ouvrir",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer « {title} » ?",
+      "deleteDescription": "L’offre et ses exigences quittent votre liste. Vos CV et vos données de carrière ne sont pas touchés.",
+      "deleted": "« {title} » supprimée",
+      "undo": "Annuler",
+      "actionFailed": "Ça n’a pas fonctionné. Rien n’a été modifié.",
+      "requiredCount": "{count, plural, one {# exigence requise} other {# exigences requises}}",
+      "preferredCount": "{count, plural, one {# atout} other {# atouts}}",
+      "career": "Votre parcours {score, number} %"
+    },
+    "new": {
+      "title": "Nouvelle offre",
+      "description": "Collez l’annonce, puis vérifiez ce qu’elle demande avant de l’enregistrer.",
+      "back": "Correspondance",
+      "pasteLabel": "Offre d’emploi",
+      "pasteHint": "Le texte complet de l’annonce : le poste, ce qui est requis et ce qui est un plus.",
+      "counter": "{count, number} / {max, number} caractères",
+      "analyze": "Analyser avec l’IA",
+      "analyzing": "Lecture de l’offre…",
+      "manual": "Saisir les exigences moi-même",
+      "tooShort": "Collez au moins {min, number} caractères de l’offre pour l’analyser.",
+      "privacy": "Seul ce texte est envoyé à {provider} ; vos CV et vos données de carrière restent ici.",
+      "privacyFallback": "Seul ce texte est envoyé à {primary}, ou à {fallback} quand {primary} est indisponible ; vos CV et vos données de carrière restent ici.",
+      "remaining": "{count, plural, one {# analyse restante aujourd’hui.} other {# analyses restantes aujourd’hui.}}",
+      "aiOff": "L’analyse IA est désactivée. Activez-la dans les réglages, ou saisissez les exigences vous-même.",
+      "aiUnavailable": "L’analyse IA n’est pas configurée sur le serveur. Vous pouvez saisir les exigences vous-même.",
+      "limit": "Vous avez utilisé les requêtes IA du jour. Le compteur repart à {time} ; relevez la limite dans les réglages ou saisissez les exigences vous-même.",
+      "settingsLink": "Ouvrir les réglages",
+      "fakeBadge": "Fournisseur de test",
+      "reviewTitle": "Vérifiez ce que l’IA a trouvé",
+      "reviewDescription": "{count, plural, =0 {L’IA n’a trouvé aucune exigence dans ce texte. Ajoutez-les ci-dessous, puis enregistrez.} one {L’IA a trouvé # exigence. Corrigez son nom, retirez-la si elle ne s’applique pas et marquez l’indispensable, puis enregistrez.} other {L’IA a trouvé # exigences. Corrigez les noms, retirez ce qui ne s’applique pas et marquez l’indispensable, puis enregistrez.}}"
+    },
+    "editor": {
+      "backTo": "Correspondance",
+      "details": "Le poste",
+      "detailsHint": "Son intitulé et l’entreprise, ainsi que les autres intitulés que cherche la vérification de l’intitulé.",
+      "jobTitle": "Intitulé du poste",
+      "company": "Entreprise",
+      "language": "Langue de l’offre",
+      "titleAliases": "Autres intitulés pour ce poste",
+      "titleAliasesHint": "La vérification de l’intitulé les cherche aussi, par exemple l’intitulé dans l’autre langue.",
+      "requirements": "Exigences",
+      "requirementsHint": "Ce que demande le poste. Un CV couvre une exigence quand il affiche son nom ou l’un de ses autres noms.",
+      "analyzeAgain": "Analyser de nouveau",
+      "reanalyzeTitle": "Analyser l’offre de nouveau ?",
+      "reanalyzeDescription": "L’IA relit le texte de l’offre, et ses résultats remplacent les exigences de ce formulaire. Rien n’est enregistré tant que vous n’enregistrez pas.",
+      "reanalyzeConfirm": "Analyser de nouveau",
+      "reanalyzed": "Nouvelles exigences trouvées par l’IA. Vérifiez-les, puis enregistrez pour mettre à jour les scores.",
+      "fakeProvider": "(Fournisseur de test : aucun service d’IA n’a été appelé.)",
+      "analyzedOn": "Exigences trouvées par l’IA le {date}, vérifiées par vous.",
+      "postText": "Texte de l’offre",
+      "postTextHint": "Conservé avec l’offre, pour pouvoir l’analyser de nouveau.",
+      "postTextLabel": "Texte de l’annonce",
+      "counter": "{count, number} / {max, number} caractères",
+      "savedToast": "Offre enregistrée",
+      "createdToast": "Offre enregistrée",
+      "errors": {
+        "invalid_input": "Certains champs sont à revoir. Vérifiez les champs signalés.",
+        "stale": "Cette offre a été modifiée ailleurs. Rechargez-la avant d’enregistrer.",
+        "not_found": "Cette offre n’existe plus. Elle a peut-être été supprimée ailleurs.",
+        "unauthorized": "Votre session a pris fin. Reconnectez-vous pour enregistrer.",
+        "unavailable": "Enregistrement impossible. Vérifiez votre connexion et réessayez ; vos modifications sont conservées."
+      }
+    },
+    "requirements": {
+      "summary": "{total, plural, =0 {Aucune exigence} one {# exigence} other {# exigences}} · {required, number} {required, plural, one {requise} other {requises}}",
+      "empty": "Aucune exigence pour l’instant. Ajoutez ce que demande le poste : une compétence, un outil, une langue ou un diplôme à la fois.",
+      "add": "Ajouter une exigence",
+      "limit": "Jusqu’à {max, number} exigences.",
+      "item": "Exigence {index, number}",
+      "label": "Exigence",
+      "labelPlaceholder": "p. ex. React",
+      "importance": "Importance",
+      "importanceOf": "Importance de {name}",
+      "required": "Requise",
+      "preferred": "Un plus",
+      "kind": "Type",
+      "kinds": {
+        "skill": "Compétence",
+        "tool": "Outil",
+        "language": "Langue",
+        "education": "Formation",
+        "certification": "Certification",
+        "experience": "Domaine",
+        "soft_skill": "Savoir-être",
+        "other": "Autre"
+      },
+      "aliases": "Autres noms",
+      "aliasesPlaceholder": "p. ex. React.js, puis Entrée",
+      "note": "Note",
+      "optional": "Facultatif",
+      "notePlaceholder": "p. ex. 3 ans et plus",
+      "remove": "Retirer {name}",
+      "kindOf": "Type de {name}",
+      "noteOf": "Note sur {name}"
+    },
+    "match": {
+      "title": "Correspondance de vos CV",
+      "description": "Couverture estimée des mots-clés : combien d’exigences de ce poste chaque CV affiche. Ce n’est pas le score d’un vrai logiciel de recrutement (ATS) ; celui de chaque employeur diffère.",
+      "unsavedNote": "Les scores utilisent les exigences enregistrées. Enregistrez pour les mettre à jour.",
+      "noCvs": "Aucun CV pour l’instant. Créez-en un pour voir comment il couvre ce poste.",
+      "createCv": "Créer un CV",
+      "noRequirements": "Ajoutez des exigences pour noter vos CV.",
+      "unreadable": "La mise en page de ce CV est illisible.",
+      "noScore": "Pas de score",
+      "score": "{score, number} %",
+      "scoreLabel": "Couverture estimée des mots-clés : {score, number} pour cent",
+      "hiddenCount": "{count, plural, one {# autre dans vos données de carrière} other {# autres dans vos données de carrière}}",
+      "titleFound": "Intitulé trouvé",
+      "titleMissing": "Intitulé non trouvé",
+      "titleHint": "Cherché dans le titre du CV et les postes occupés.",
+      "showDetails": "Détails",
+      "hideDetails": "Masquer les détails",
+      "openCv": "Ouvrir le CV",
+      "groups": {
+        "matched": "Trouvées dans ce CV ({count, number})",
+        "hidden": "Dans vos données de carrière, absentes de ce CV ({count, number})",
+        "missing": "Introuvables ({count, number})"
+      },
+      "groupHints": {
+        "matched": "Où le CV affiche chacune.",
+        "hidden": "Aucune partie visible de ce CV ne les montre. Affichez l’entrée, ou reformulez-la pour ce CV, si elle est pertinente.",
+        "missing": "Absentes aussi de vos données de carrière. Ajoutez-les seulement si elles sont vraies."
+      },
+      "header": "En-tête",
+      "fields": {
+        "headerTitle": "Titre du CV",
+        "summary": "Résumé",
+        "sectionTitle": "Titre de section",
+        "skillGroup": "Groupe de compétences",
+        "skill": "Compétence",
+        "role": "Poste",
+        "entryTitle": "Titre",
+        "organization": "Organisation",
+        "place": "Lieu",
+        "bullet": "Réalisation",
+        "paragraph": "Description",
+        "technology": "Technologie",
+        "listItem": "Élément",
+        "listDetail": "Niveau",
+        "subsectionTitle": "Sous-section",
+        "customLabel": "Libellé",
+        "customText": "Texte"
+      },
+      "records": {
+        "profile": "Profil",
+        "skills": "Compétences techniques",
+        "experience": "Expérience",
+        "education": "Formation",
+        "projects": "Projets",
+        "certifications": "Certifications",
+        "soft_skills": "Savoir-être",
+        "languages": "Langues",
+        "custom": "Section personnalisée"
+      },
+      "howTitle": "Comment le score est calculé",
+      "how": {
+        "once": "Chaque exigence compte une fois, quel que soit le nombre d’apparitions de son nom.",
+        "weights": "Les exigences requises comptent double : le score est le poids trouvé divisé par le poids total.",
+        "visible": "Seul ce que ce CV affiche compte, avec ses formulations propres. Les entrées et puces masquées ne comptent pas.",
+        "words": "Les noms se comparent en mots entiers, sans accents ni majuscules : « Java » n’est pas trouvé dans « JavaScript », ni « React » dans « React Native ». Les autres noms que vous indiquez comptent aussi.",
+        "title": "La vérification de l’intitulé est affichée à part et n’entre pas dans le score.",
+        "estimate": "C’est une estimation de la couverture des mots-clés. Les vrais logiciels de recrutement diffèrent d’un employeur à l’autre."
+      },
+      "showDetailsFor": "Détails : {cv}",
+      "hideDetailsFor": "Masquer les détails : {cv}",
+      "openCvFor": "Ouvrir le CV : {cv}",
+      "countsRequired": "requises {matched, number}/{total, number}",
+      "countsPreferred": "un plus {matched, number}/{total, number}",
+      "showAll": "Afficher les {count, number} CV",
+      "showFewer": "Afficher les 5 meilleurs",
+      "best": "Meilleure correspondance"
+    },
+    "createCv": "Créer un CV pour cette offre",
+    "career": {
+      "title": "Votre parcours et cette offre",
+      "description": "Couverture estimée des mots-clés dans toutes vos données de carrière, affichées ou non dans un CV : ce que vous pouvez mettre en avant pour cette offre.",
+      "noRequirements": "Ajoutez des exigences ci-dessous pour les comparer à vos données de carrière.",
+      "covers": "{matched, number} sur {total, number} {total, plural, one {exigence trouvée} other {exigences trouvées}} dans vos données de carrière",
+      "have": "Dans vos données de carrière ({count, number})",
+      "haveNone": "Aucune de ces exigences n’apparaît encore dans vos données de carrière.",
+      "lack": "Absentes de vos données de carrière ({count, number})",
+      "lackNone": "Vos données de carrière mentionnent toutes les exigences.",
+      "lackHint": "Ajoutez-les seulement si elles sont vraies : un CV ne peut pas montrer ce que vous n’avez pas fait.",
+      "openCareerData": "Ouvrir les données de carrière",
+      "showWhere": "Voir où chacune apparaît",
+      "hideWhere": "Masquer où chacune apparaît",
+      "whereTitle": "Où chacune apparaît",
+      "whereHint": "Là où vos données de carrière mentionnent chaque exigence, dans toutes les langues."
+    }
+  },
+  "ai": {
+    "providers": {
+      "groq": "Groq",
+      "gemini": "Gemini"
+    },
+    "settings": {
+      "title": "Fonctions d’IA",
+      "description": "L’IA peut lire une offre d’emploi et en lister les exigences. Cette fonction reste désactivée tant que vous ne l’activez pas.",
+      "providers": "Fournisseurs",
+      "roles": {
+        "primary": "Fournisseur principal",
+        "fallback": "Fournisseur de secours"
+      },
+      "status": {
+        "ready": "Prêt · {model}",
+        "fake": "Fournisseur de test",
+        "unavailable": "Non configuré"
+      },
+      "fakeNote": "Des fournisseurs de test répondent à leur place : aucune requête ne quitte le serveur.",
+      "reasons": {
+        "missing_key": "Ajoutez {key} aux variables d’environnement du serveur pour l’utiliser.",
+        "invalid_key": "{key} ne ressemble pas à une clé d’API. Vérifiez la valeur sur le serveur.",
+        "invalid_model": "GROQ_MODEL n’est pas un nom de modèle valide. Vérifiez la valeur sur le serveur.",
+        "debug_logging": "GOOGLE_GENAI_DEBUG est défini sur le serveur : il écrirait les offres dans les journaux. Retirez-le pour utiliser Gemini.",
+        "invalid_primary": "AI_PRIMARY_PROVIDER doit valoir groq ou gemini. Vérifiez la valeur sur le serveur."
+      },
+      "fallbackHint": "{fallback} ne répond que si {primary} est surchargé, limité ou trop lent. Une analyse compte une seule fois dans la limite quotidienne, même quand les deux sont essayés.",
+      "lastAnalysis": "Dernière analyse",
+      "lastAnalysisValue": "{model} ({provider}) · {date}",
+      "lastAnalysisFallback": "{model} ({provider}, en secours) · {date}",
+      "lastAnalysisNone": "Aucune analyse pour l’instant.",
+      "enable": "Utiliser l’IA pour analyser les offres",
+      "enableHint": "Quand vous appuyez sur Analyser, le texte de l’offre est envoyé à {provider}. Vos CV et vos données de carrière ne sont pas envoyés.",
+      "enableHintFallback": "Quand vous appuyez sur Analyser, le texte de l’offre est envoyé à {primary}, ou à {fallback} quand {primary} est indisponible. Vos CV et vos données de carrière ne sont pas envoyés.",
+      "enableHintNone": "Quand vous appuyez sur Analyser, seul le texte de l’offre est envoyé à un fournisseur d’IA. Vos CV et vos données de carrière ne sont pas envoyés.",
+      "dailyLimit": "Limite quotidienne",
+      "dailyLimitHint": "Requêtes IA par jour, de {min, number} à {max, number}. Les requêtes échouées comptent aussi. Le compteur repart chaque jour à {time}.",
+      "limitError": "Choisissez un nombre entier de {min, number} à {max, number}.",
+      "save": "Enregistrer les réglages IA",
+      "saving": "Enregistrement…",
+      "saved": "Réglages IA enregistrés",
+      "saveFailed": "Impossible d’enregistrer les réglages IA. Vérifiez votre connexion et réessayez.",
+      "groqData": "Groq n’utilise pas ce que vous envoyez pour entraîner des modèles et n’en garde aucune copie par défaut, hormis des journaux conservés jusqu’à 30 jours. Activez Zero Data Retention dans les Data Controls de la console Groq pour supprimer aussi ces journaux.",
+      "paidKey": "Pour Gemini, utilisez une clé d’API d’un projet Google Cloud dont la facturation est activée. Avec l’offre gratuite, Google peut utiliser ce que vous envoyez pour améliorer ses produits, et des personnes peuvent le lire.",
+      "usage": "Aujourd’hui",
+      "usageCount": "{used, number} requêtes sur {limit, number}",
+      "monthCost": "Coût estimé ce mois-ci",
+      "monthCostValue": "{cost} · {count, plural, one {# requête} other {# requêtes}}",
+      "costNote": "Estimé à partir du nombre de jetons indiqué par chaque fournisseur et de ses prix publics ; une clé gratuite n’est pas facturée. Les factures des fournisseurs font foi.",
+      "recent": "Requêtes récentes",
+      "recentEmpty": "Aucune requête IA pour l’instant.",
+      "tokens": "{count, number} jetons",
+      "attemptFailed": "{provider} ({reason})",
+      "features": {
+        "job_post_analysis": "Analyse d’offre"
+      },
+      "statuses": {
+        "pending": "En cours",
+        "succeeded": "Réussie",
+        "failed": "Échouée"
+      },
+      "failures": {
+        "timeout": "délai dépassé",
+        "rate_limited": "limite de débit",
+        "too_large": "offre trop longue",
+        "overloaded": "surcharge",
+        "unavailable": "injoignable",
+        "rejected": "requête refusée",
+        "auth": "clé d’API refusée",
+        "invalid_response": "réponse inutilisable",
+        "abandoned": "interrompue",
+        "unknown": "erreur inconnue"
+      }
+    },
+    "errors": {
+      "ai_not_configured": "L’IA n’est pas configurée sur le serveur. Vous pouvez saisir les exigences vous-même.",
+      "ai_disabled": "L’IA est désactivée. Activez-la dans les réglages pour analyser des offres.",
+      "ai_limit_reached": "Vous avez utilisé les requêtes IA du jour. Relevez la limite dans les réglages ou réessayez demain.",
+      "ai_busy": "Une autre analyse est en cours. Réessayez dans un instant.",
+      "ai_timeout": "{provider} a mis trop de temps à répondre. Réessayez ; un texte plus court aide.",
+      "ai_rate_limited": "{provider} limite les requêtes en ce moment. Patientez une minute et réessayez.",
+      "ai_too_large": "{provider} ne peut pas traiter une offre aussi longue avec sa formule actuelle. Raccourcissez le texte, ou saisissez les exigences vous-même.",
+      "ai_overloaded": "{provider} est très sollicité en ce moment. Patientez une minute et réessayez.",
+      "ai_unavailable": "{provider} est injoignable. Vérifiez votre connexion et réessayez.",
+      "ai_rejected": "{provider} a refusé ce texte. Vérifiez-le, ou saisissez les exigences vous-même.",
+      "ai_key_rejected": "{providerId, select, groq {Groq a refusé la clé d’API. Vérifiez GROQ_API_KEY sur le serveur.} gemini {Google a refusé la clé d’API. Vérifiez GEMINI_API_KEY et la facturation du projet.} other {{provider} a refusé la clé d’API. Vérifiez-la sur le serveur.}}",
+      "ai_invalid_response": "La réponse de {provider} est inutilisable. Réessayez.",
+      "ai_providers_unavailable": "Aucun fournisseur d’IA n’a pu répondre pour le moment : tous deux étaient surchargés ou trop lents. Patientez une minute et réessayez, ou saisissez les exigences vous-même.",
+      "ai_failed": "La requête d’IA a échoué. Réessayez dans un instant.",
+      "invalid_input": "Collez davantage de l’offre, puis réessayez.",
+      "stale": "Quelque chose a changé entre-temps. Réessayez.",
+      "not_found": "Cette offre n’existe plus.",
+      "unauthorized": "Votre session a pris fin. Reconnectez-vous pour continuer.",
+      "unavailable": "Un problème est survenu de notre côté. Réessayez dans un instant."
+    }
+  },
   "settings": {
     "title": "Réglages",
     "description": "Préférences de cet espace de travail.",
@@ -923,7 +1262,9 @@
     "endBeforeStart": "La date de fin précède la date de début.",
     "tooMany": "Il y a trop d’éléments ici.",
     "invalidLocalizedText": "Choisissez soit un texte commun aux deux langues, soit des traductions distinctes.",
-    "invalid": "Vérifiez ce champ."
+    "invalid": "Vérifiez ce champ.",
+    "tooShort": "C’est trop court.",
+    "duplicateTerm": "Ce nom est déjà utilisé par une autre exigence, ou deux fois ici."
   },
   "studio": {
     "workspace": "Mon espace",

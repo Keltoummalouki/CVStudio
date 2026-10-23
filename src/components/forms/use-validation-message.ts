@@ -13,6 +13,8 @@ type ValidationKey =
   | "endBeforeStart"
   | "tooMany"
   | "invalidLocalizedText"
+  | "tooShort"
+  | "duplicateTerm"
   | "invalid";
 
 const KNOWN = new Set<string>([
@@ -25,6 +27,8 @@ const KNOWN = new Set<string>([
   "endBeforeStart",
   "tooMany",
   "invalidLocalizedText",
+  "tooShort",
+  "duplicateTerm",
 ]);
 
 /** First message found on a field or, for nested values like localized text, its children. */

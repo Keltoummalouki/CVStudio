@@ -1,4 +1,5 @@
 import {
+  BriefcaseBusinessIcon,
   FileTextIcon,
   LayersIcon,
   LayoutGridIcon,
@@ -7,7 +8,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type NavigationItemId = "overview" | "careerData" | "cvs" | "templates" | "settings";
+export type NavigationItemId =
+  "overview" | "careerData" | "cvs" | "jobs" | "templates" | "settings";
 
 export type NavigationItem = {
   id: NavigationItemId;
@@ -19,14 +21,25 @@ export type NavigationItem = {
 };
 
 export const DASHBOARD_HOME = "/dashboard";
+export const SETTINGS_HREF = "/dashboard/settings";
+export const PROFILE_HREF = "/dashboard/content/profile";
 
 export const PRIMARY_NAVIGATION: readonly NavigationItem[] = [
   { id: "overview", href: DASHBOARD_HOME, icon: LayoutGridIcon },
   { id: "careerData", href: "/dashboard/content", icon: LibraryBigIcon },
   { id: "cvs", href: "/dashboard/cvs", icon: FileTextIcon },
+  { id: "jobs", href: "/dashboard/jobs", icon: BriefcaseBusinessIcon },
   { id: "templates", href: "/dashboard/templates", icon: LayersIcon },
-  { id: "settings", href: "/dashboard/settings", icon: SettingsIcon },
+  { id: "settings", href: SETTINGS_HREF, icon: SettingsIcon },
 ];
+
+/**
+ * The phone tab bar holds five destinations; Settings moves to the account
+ * menu in the top bar (AccountMenu).
+ */
+export const MOBILE_TAB_NAVIGATION: readonly NavigationItem[] = PRIMARY_NAVIGATION.filter(
+  (item) => item.id !== "settings",
+);
 
 export const NEW_CV_HREF = "/dashboard/cvs/new";
 

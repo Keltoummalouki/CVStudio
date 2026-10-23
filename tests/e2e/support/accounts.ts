@@ -52,6 +52,10 @@ async function ensureUser({ email, password }: { email: string; password: string
 
 /** Top-level tables; child rows cascade with their parents. */
 const OWNER_TABLES = [
+  // AI usage and settings too, so every run starts with AI off and a full daily quota.
+  "ai_requests",
+  "owner_settings",
+  "job_posts",
   "cv_documents",
   "cv_templates",
   "profile_links",

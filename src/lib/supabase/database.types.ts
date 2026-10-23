@@ -3,6 +3,135 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      ai_request_attempts: {
+        Row: {
+          attempts: number;
+          created_at: string;
+          duration_ms: number;
+          error_code: string | null;
+          estimated_cost_usd: number | null;
+          http_status: number | null;
+          id: string;
+          input_tokens: number | null;
+          model: string;
+          output_tokens: number | null;
+          owner_id: string;
+          position: number;
+          provider: string;
+          request_id: string;
+          status: string;
+          thought_tokens: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempts: number;
+          created_at?: string;
+          duration_ms: number;
+          error_code?: string | null;
+          estimated_cost_usd?: number | null;
+          http_status?: number | null;
+          id?: string;
+          input_tokens?: number | null;
+          model: string;
+          output_tokens?: number | null;
+          owner_id: string;
+          position: number;
+          provider: string;
+          request_id: string;
+          status: string;
+          thought_tokens?: number | null;
+        };
+        Update: {
+          attempts?: number;
+          created_at?: string;
+          duration_ms?: number;
+          error_code?: string | null;
+          estimated_cost_usd?: number | null;
+          http_status?: number | null;
+          id?: string;
+          input_tokens?: number | null;
+          model?: string;
+          output_tokens?: number | null;
+          owner_id?: string;
+          position?: number;
+          provider?: string;
+          request_id?: string;
+          status?: string;
+          thought_tokens?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_request_attempts_owner_id_request_id_fkey";
+            columns: ["owner_id", "request_id"];
+            isOneToOne: false;
+            referencedRelation: "ai_requests";
+            referencedColumns: ["owner_id", "id"];
+          },
+        ];
+      };
+      ai_requests: {
+        Row: {
+          attempts: number;
+          duration_ms: number | null;
+          error_code: string | null;
+          estimated_cost_usd: number | null;
+          feature: string;
+          finished_at: string | null;
+          id: string;
+          input_tokens: number | null;
+          model: string;
+          output_tokens: number | null;
+          owner_id: string;
+          provider: string | null;
+          started_at: string;
+          status: string;
+          thought_tokens: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempts?: number;
+          duration_ms?: number | null;
+          error_code?: string | null;
+          estimated_cost_usd?: number | null;
+          feature: string;
+          finished_at?: string | null;
+          id?: string;
+          input_tokens?: number | null;
+          model: string;
+          output_tokens?: number | null;
+          owner_id: string;
+          provider?: string | null;
+          started_at?: string;
+          status?: string;
+          thought_tokens?: number | null;
+        };
+        Update: {
+          attempts?: number;
+          duration_ms?: number | null;
+          error_code?: string | null;
+          estimated_cost_usd?: number | null;
+          feature?: string;
+          finished_at?: string | null;
+          id?: string;
+          input_tokens?: number | null;
+          model?: string;
+          output_tokens?: number | null;
+          owner_id?: string;
+          provider?: string | null;
+          started_at?: string;
+          status?: string;
+          thought_tokens?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_requests_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "app_owners";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
       app_owners: {
         Row: {
           created_at: string;
@@ -499,6 +628,90 @@ export type Database = {
           },
         ];
       };
+      job_posts: {
+        Row: {
+          analyzed_at: string | null;
+          company: string;
+          created_at: string;
+          deleted_at: string | null;
+          description: string;
+          id: string;
+          language: string;
+          owner_id: string;
+          requirements: NonNullable<Json>;
+          title: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          analyzed_at?: string | null;
+          company?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          description?: string;
+          id?: string;
+          language?: string;
+          owner_id?: string;
+          requirements?: NonNullable<Json>;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          analyzed_at?: string | null;
+          company?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          description?: string;
+          id?: string;
+          language?: string;
+          owner_id?: string;
+          requirements?: NonNullable<Json>;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_posts_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "app_owners";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
+      owner_settings: {
+        Row: {
+          ai_daily_limit: number;
+          ai_enabled: boolean;
+          created_at: string;
+          owner_id: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          ai_daily_limit?: number;
+          ai_enabled?: boolean;
+          created_at?: string;
+          owner_id?: string;
+          updated_at?: string;
+        };
+        Update: {
+          ai_daily_limit?: number;
+          ai_enabled?: boolean;
+          created_at?: string;
+          owner_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "owner_settings_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: true;
+            referencedRelation: "app_owners";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
       profile_links: {
         Row: {
           created_at: string;
@@ -884,7 +1097,23 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      begin_ai_request: { Args: { p_feature: string; p_model: string }; Returns: string };
       count_record_references: { Args: { record_id: string }; Returns: Json };
+      finish_ai_request: {
+        Args: {
+          p_attempts: number;
+          p_duration_ms: number;
+          p_error_code?: string;
+          p_estimated_cost_usd?: number;
+          p_input_tokens?: number;
+          p_output_tokens?: number;
+          p_provider_attempts?: Json;
+          p_request_id: string;
+          p_succeeded: boolean;
+          p_thought_tokens?: number;
+        };
+        Returns: undefined;
+      };
       reorder_records: { Args: { ids: string[]; target: string }; Returns: undefined };
       save_certification: { Args: { payload: Json }; Returns: Json };
       save_custom_section: { Args: { payload: Json }; Returns: Json };

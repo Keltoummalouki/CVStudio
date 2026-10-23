@@ -4,7 +4,12 @@ import { Fragment, Suspense } from "react";
 import { ArrowRightIcon, LockKeyholeIcon, UserRoundIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { BrandMark } from "@/components/brand/brand-mark";
-import { DASHBOARD_HOME, PRIMARY_NAVIGATION, isNavigationItemActive } from "@/config/navigation";
+import {
+  DASHBOARD_HOME,
+  PRIMARY_NAVIGATION,
+  PROFILE_HREF,
+  isNavigationItemActive,
+} from "@/config/navigation";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { LocaleSwitcher } from "./locale-switcher";
@@ -30,7 +35,7 @@ function RailLinks({ pathname }: { pathname: string | null }) {
             {item.id === "settings" ? (
               <li className="mt-auto shrink-0 pt-8">
                 <div className="border-t border-rail-border pt-3">
-                  <Link href="/dashboard/content/profile" className={railLinkClassName}>
+                  <Link href={PROFILE_HREF} className={railLinkClassName}>
                     <UserRoundIcon
                       aria-hidden="true"
                       className="size-[1.125rem] shrink-0"
@@ -80,7 +85,7 @@ export function AppRail({ newCvAction }: { newCvAction: React.ReactNode }) {
   const tStudio = useTranslations("studio");
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-(--rail-width) overflow-x-hidden overflow-y-auto overscroll-contain border-r border-rail-border bg-rail text-rail-foreground [color-scheme:dark] lg:block">
+    <aside className="studio-rail fixed inset-y-0 left-0 z-30 hidden w-(--rail-width) overflow-x-hidden overflow-y-auto overscroll-contain border-r border-rail-border bg-rail text-rail-foreground [color-scheme:dark] lg:block">
       <div className="flex min-h-full flex-col px-4 pt-7 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="shrink-0 px-3">
           <Link

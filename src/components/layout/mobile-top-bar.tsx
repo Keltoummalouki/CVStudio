@@ -2,9 +2,13 @@ import { useTranslations } from "next-intl";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { DASHBOARD_HOME } from "@/config/navigation";
 import { Link } from "@/lib/i18n/navigation";
+import { AccountMenu } from "./account-menu";
 import { LocaleSwitcher } from "./locale-switcher";
 
-/** Compact header for phones and tablets; navigation lives in the bottom tab bar. */
+/**
+ * Compact header for phones and tablets; navigation lives in the bottom tab
+ * bar, Settings and the profile in the account menu.
+ */
 export function MobileTopBar({ newCvAction }: { newCvAction: React.ReactNode }) {
   const t = useTranslations("navigation");
 
@@ -19,6 +23,7 @@ export function MobileTopBar({ newCvAction }: { newCvAction: React.ReactNode }) 
       </Link>
       <LocaleSwitcher />
       {newCvAction}
+      <AccountMenu />
     </header>
   );
 }

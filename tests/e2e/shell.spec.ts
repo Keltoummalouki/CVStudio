@@ -47,17 +47,19 @@ test.describe("dashboard shell", () => {
     const nav = page.getByRole("navigation", { name: "Main navigation" }).filter({ visible: true });
     await expect(nav).toHaveCount(1);
 
+    // Phones keep five tabs; Settings lives in the account menu (checked below).
     const destinations = isMobile(testInfo.project.name)
       ? [
           ["Data", "Career data"],
           ["CVs", "CVs"],
+          ["Match", "Job match"],
           ["Templates", "Templates"],
-          ["Settings", "Settings"],
           ["Overview", "Overview"],
         ]
       : [
           ["Career data", "Career data"],
           ["CVs", "CVs"],
+          ["Job match", "Job match"],
           ["Templates", "Templates"],
           ["Settings", "Settings"],
           ["Overview", "Overview"],
@@ -71,6 +73,21 @@ test.describe("dashboard shell", () => {
         "page",
       );
     }
+  });
+
+  test("phones reach Settings and the profile from the account menu", async ({
+    page,
+  }, testInfo) => {
+    test.skip(!isMobile(testInfo.project.name), "The desktop rail lists Settings directly.");
+    await page.goto("/en/dashboard/cvs");
+    const nav = page.getByRole("navigation", { name: "Main navigation" }).filter({ visible: true });
+    await expect(nav.getByRole("link", { name: "Settings" })).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Account menu" }).click();
+    await expect(page.getByRole("menuitem", { name: "Your profile" })).toBeVisible();
+    await page.getByRole("menuitem", { name: "Settings" }).click();
+    await expect(page).toHaveURL(/\/en\/dashboard\/settings$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   });
 
   test("uses the ink rail on desktop and the tab bar on mobile", async ({ page }, testInfo) => {
@@ -152,6 +169,8 @@ test.describe("layout", () => {
     "/en/dashboard/content/experiences/new",
     "/fr/dashboard/content/profile",
     "/en/dashboard/settings",
+    "/en/dashboard/jobs",
+    "/fr/dashboard/jobs/new",
   ]) {
     test(`${path} never scrolls horizontally`, async ({ page }) => {
       await page.goto(path);
@@ -172,6 +191,8 @@ test.describe("accessibility", () => {
     "/en/dashboard/cvs",
     "/fr/dashboard/templates",
     "/en/dashboard/settings",
+    "/en/dashboard/jobs",
+    "/fr/dashboard/jobs/new",
   ]) {
     test(`${path} has no serious or critical axe violations`, async ({ page }) => {
       await page.goto(path);
