@@ -103,4 +103,43 @@ describe("data integrity constraints", () => {
       .insert({ name: "Mismatch", definition: { schemaVersion: 2 } });
     expect(error?.code).toBe(CHECK_VIOLATION);
   });
+
+  describe("free-form designs", () => {
+    const definition = { schemaVersion: 1 };
+    const design = { schemaVersion: 1, pages: 1, background: "#ffffff", elements: [] };
+
+    it.each(["cv_templates", "cv_documents"] as const)(
+      "%s stores a design exactly when the canvas renderer draws it",
+      async (table) => {
+        const canvas = await owner.client
+          .from(table)
+          .insert({ name: "Canvas", definition, visual_template_key: "canvas-v1", design });
+        const classic = await owner.client.from(table).insert({ name: "Classic", definition });
+        expect([canvas.error, classic.error]).toEqual([null, null]);
+
+        for (const row of [
+          { visual_template_key: "canvas-v1" },
+          { design },
+          { visual_template_key: "canvas-v1", design: { ...design, schemaVersion: 2 } },
+          { visual_template_key: "canvas-v1", design: [design] },
+          { visual_template_key: "magazine-v9", design },
+        ]) {
+          const { error } = await owner.client
+            .from(table)
+            .insert({ name: "Invalid", definition, ...row });
+          expect(error?.code, JSON.stringify(row)).toBe(CHECK_VIOLATION);
+        }
+      },
+    );
+
+    it("caps the size of a design", async () => {
+      const { error } = await owner.client.from("cv_templates").insert({
+        name: "Huge",
+        definition,
+        visual_template_key: "canvas-v1",
+        design: { ...design, note: "x".repeat(262_144) },
+      });
+      expect(error?.code).toBe(CHECK_VIOLATION);
+    });
+  });
 });

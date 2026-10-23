@@ -8,7 +8,11 @@ import type { Locale } from "@/lib/i18n/config";
 import { buildMasterData, LABELS, sequentialIds } from "../../fixtures/master-data";
 
 // next/font only works inside the Next.js compiler.
-vi.mock("@/features/cv-renderer/fonts", () => ({ poppins: { className: "font-poppins" } }));
+vi.mock("@/features/cv-renderer/fonts", () => ({
+  poppins: { className: "font-poppins" },
+  inter: { className: "font-inter" },
+  lora: { className: "font-lora" },
+}));
 
 const { ClassicCv, CLASSIC_REFERENCE_V1 } =
   await import("@/features/cv-renderer/classic-reference-v1/classic-cv");

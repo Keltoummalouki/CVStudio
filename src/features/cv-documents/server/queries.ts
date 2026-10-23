@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { definitionSchema, type CvDefinition } from "@/features/cv-builder/definition";
 import type { CvLabelSet } from "@/features/cv-builder/labels";
 import type { MasterData } from "@/features/cv-builder/master-data";
-import { isBlockingIssue, resolveCv } from "@/features/cv-builder/resolve";
+import { isBlockingIssue, resolveCv, type Resolution } from "@/features/cv-builder/resolve";
+import { designSchema, type Design } from "@/features/cv-design/design";
 import { loadMasterData } from "@/features/cv-builder/server/load-master-data";
 import { requireOwner } from "@/lib/auth/session";
 import { DataAccessError } from "@/lib/data/errors";
@@ -24,6 +25,26 @@ export type CvListItem = {
   warnings: number;
 };
 
+/** A stored layout resolved the way the builder does, or null when it cannot be read. */
+export function resolveStored(
+  definition: unknown,
+  master: MasterData,
+  locale: Locale,
+  labels: CvLabelSet,
+): Resolution | null {
+  const parsed = definitionSchema.safeParse(definition);
+  return parsed.success ? resolveCv(parsed.data, master, locale, labels[locale]) : null;
+}
+
+/** What stands in the way of exporting: blocking issues, and the other warnings. */
+export function issueCounts(
+  resolution: Resolution | null,
+): Pick<CvListItem, "missingTranslations" | "warnings"> {
+  if (!resolution) return { missingTranslations: null, warnings: 0 };
+  const blocking = resolution.issues.filter(isBlockingIssue).length;
+  return { missingTranslations: blocking, warnings: resolution.issues.length - blocking };
+}
+
 /** Counts what stands in the way of exporting a CV, the same way the builder does. */
 export function summarizeIssues(
   definition: unknown,
@@ -31,11 +52,7 @@ export function summarizeIssues(
   locale: Locale,
   labels: CvLabelSet,
 ): Pick<CvListItem, "missingTranslations" | "warnings"> {
-  const parsed = definitionSchema.safeParse(definition);
-  if (!parsed.success) return { missingTranslations: null, warnings: 0 };
-  const { issues } = resolveCv(parsed.data, master, locale, labels[locale]);
-  const blocking = issues.filter(isBlockingIssue).length;
-  return { missingTranslations: blocking, warnings: issues.length - blocking };
+  return issueCounts(resolveStored(definition, master, locale, labels));
 }
 
 export type CvLibrary = {
@@ -90,6 +107,8 @@ export type CvDocument = {
   updatedAt: string;
   createdFromTemplateName: string | null;
   definition: CvDefinition;
+  /** Its own copy of a free-form design; null when Classic draws it. */
+  design: Design | null;
 };
 
 /** Cached per request: metadata and the page read the same row once. */
@@ -97,7 +116,9 @@ export const getCvDocument = cache(async (id: string): Promise<CvDocument> => {
   const { supabase, owner } = await requireOwner();
   const { data, error } = await supabase
     .from("cv_documents")
-    .select("id, name, locale, revision, updated_at, created_from_template_name, definition")
+    .select(
+      "id, name, locale, revision, updated_at, created_from_template_name, definition, design",
+    )
     .eq("owner_id", owner.id)
     .eq("id", id)
     .is("deleted_at", null)
@@ -109,6 +130,10 @@ export const getCvDocument = cache(async (id: string): Promise<CvDocument> => {
   if (!definition.success) {
     throw new DataAccessError("read CV definition", { cause: definition.error });
   }
+  const design = data.design === null ? null : designSchema.safeParse(data.design);
+  if (design && !design.success) {
+    throw new DataAccessError("read CV design", { cause: design.error });
+  }
 
   return {
     id: data.id,
@@ -118,6 +143,7 @@ export const getCvDocument = cache(async (id: string): Promise<CvDocument> => {
     updatedAt: data.updated_at,
     createdFromTemplateName: data.created_from_template_name,
     definition: definition.data,
+    design: design ? design.data : null,
   };
 });
 

@@ -24,21 +24,15 @@ const templates: TemplateListItem[] = [
     id: "11111111-1111-4111-8111-111111111111",
     name: "Frontend roles",
     description: "Projects first, no certifications.",
-    locale: "en",
     updatedAt: "2026-10-20T09:00:00Z",
     cvCount: 2,
-    missingTranslations: 0,
-    warnings: 0,
   },
   {
     id: "22222222-2222-4222-8222-222222222222",
     name: "Candidatures en français",
     description: "",
-    locale: "fr",
     updatedAt: "2026-10-19T09:00:00Z",
     cvCount: 0,
-    missingTranslations: 1,
-    warnings: 0,
   },
 ];
 
@@ -49,18 +43,15 @@ describe("template library", () => {
     push.mockReset();
   });
 
-  it("shows each template's language, readiness and how many CVs came from it", () => {
+  it("opens each design in the designer and says how many CVs came from it", () => {
     renderWithIntl(<TemplateList templates={templates} />);
 
     const frontend = screen.getByRole("link", { name: /Frontend roles/ });
     expect(frontend).toHaveAttribute("href", `/en/dashboard/templates/${templates[0]!.id}`);
     expect(within(frontend).getByText("Projects first, no certifications.")).toBeInTheDocument();
     expect(within(frontend).getByText("Used for 2 CVs")).toBeInTheDocument();
-    expect(within(frontend).getByText("Ready to use")).toBeInTheDocument();
 
     const french = screen.getByRole("link", { name: /Candidatures en français/ });
-    expect(within(french).getByText("FR")).toBeInTheDocument();
-    expect(within(french).getByText("1 text to translate")).toBeInTheDocument();
     expect(within(french).getByText("No CV made from it yet")).toBeInTheDocument();
 
     // "Use template" starts a new CV with the template preselected.
@@ -92,5 +83,27 @@ describe("template library", () => {
     await user.click(screen.getByRole("button", { name: "More actions for Frontend roles" }));
     await user.click(screen.getByRole("menuitem", { name: "Duplicate" }));
     expect(duplicateTemplate).toHaveBeenCalledWith(templates[0]!.id, "Copy of Frontend roles");
+  });
+
+  it("shows each template's first page, or a schematic page when it cannot be drawn", () => {
+    renderWithIntl(
+      <TemplateList
+        templates={templates}
+        thumbnails={{ [templates[0]!.id]: <p>First page of Frontend roles</p> }}
+      />,
+    );
+
+    const [frontend, french] = screen.getAllByRole("listitem");
+    expect(within(frontend!).getByText("First page of Frontend roles")).toBeInTheDocument();
+    // The French template has no picture: a schematic A4 page stands in.
+    expect(french!.querySelector("svg[viewBox='0 0 210 297']")).not.toBeNull();
+    // The whole card opens the editor; its actions stay separate controls.
+    expect(within(frontend!).getByRole("link", { name: /Frontend roles/ })).toHaveAttribute(
+      "href",
+      `/en/dashboard/templates/${templates[0]!.id}`,
+    );
+    expect(
+      within(frontend!).getByRole("button", { name: "More actions for Frontend roles" }),
+    ).toBeInTheDocument();
   });
 });

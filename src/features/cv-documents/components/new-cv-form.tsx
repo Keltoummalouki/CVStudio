@@ -67,23 +67,16 @@ export function NewCvForm({
   const [templateId, setTemplateId] = useState(initialTemplate?.id ?? CLASSIC);
 
   // A job post in English or French sets the CV language; "other" leaves the usual default.
+  // Designs hold no text of their own language: they never decide it.
   const jobLocale = job && isLocale(job.language) ? job.language : null;
   const form = useForm<CreateCvValues>({
     resolver: zodResolver(createCvSchema),
     defaultValues: {
       name: job ? nameForJob(job) : "",
-      locale: jobLocale ?? initialTemplate?.locale ?? defaultLocale,
+      locale: jobLocale ?? defaultLocale,
     },
   });
   const locale = useWatch({ control: form.control, name: "locale" });
-
-  const chooseTemplate = (value: string) => {
-    setTemplateId(value);
-    // A template was saved in one language: start the CV in it (still changeable below),
-    // unless the job post already says which language the application is in.
-    const template = templates.find((candidate) => candidate.id === value);
-    if (template && !jobLocale) form.setValue("locale", template.locale);
-  };
 
   const submit = form.handleSubmit((values) => {
     setError(null);
@@ -118,7 +111,7 @@ export function NewCvForm({
             name="template"
             value={CLASSIC}
             checked={templateId === CLASSIC}
-            onChange={() => chooseTemplate(CLASSIC)}
+            onChange={() => setTemplateId(CLASSIC)}
             selected={templateId === CLASSIC}
             media={<Thumbnail selected={templateId === CLASSIC} />}
             title={t("template.classic")}
@@ -141,21 +134,11 @@ export function NewCvForm({
               name="template"
               value={template.id}
               checked={templateId === template.id}
-              onChange={() => chooseTemplate(template.id)}
+              onChange={() => setTemplateId(template.id)}
               selected={templateId === template.id}
               media={<Thumbnail selected={templateId === template.id} />}
               title={template.name}
               description={template.description || t("template.savedHint")}
-              meta={
-                <span
-                  className={cn(
-                    "text-xs font-semibold",
-                    templateId === template.id ? "text-paper/75" : "text-muted-foreground",
-                  )}
-                >
-                  {t("template.savedLanguage", { language: tLanguages(template.locale) })}
-                </span>
-              }
             />
           ))}
         </div>

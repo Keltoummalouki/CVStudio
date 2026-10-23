@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultDefinition } from "@/features/cv-builder/defaults";
+import { createBlankDesign, type Design } from "@/features/cv-design/design";
+import { addElement, createElement } from "@/features/cv-design/operations";
 import { buildMasterData, sequentialIds } from "../../fixtures/master-data";
 import {
   callsOf,
   createFakeSupabase,
   isOwnerScoped,
+  OWNER_ID,
   ownerContext,
   type FakeSupabaseOptions,
 } from "../../utils/fake-supabase";
@@ -15,18 +18,27 @@ vi.mock("@/lib/auth/session", () => ({ getOwnerContext: mocks.getOwnerContext })
 vi.mock("next/cache", () => ({ refresh: mocks.refresh }));
 
 const {
+  createDesignTemplate,
   deleteTemplate,
   duplicateTemplate,
-  getTemplateChoices,
   getTemplateRevision,
   restoreTemplate,
-  saveCvAsTemplate,
-  saveTemplate,
+  saveTemplateDesign,
 } = await import("@/features/cv-templates/server/actions");
 
-const CV_ID = "3e9f6c1a-5b7d-4e2f-8a1c-9d0b2e4f6a8c";
 const TEMPLATE_ID = "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
 const definition = createDefaultDefinition(buildMasterData(), sequentialIds());
+
+/** A design with one section on the page. */
+function designWithProjects(): Design {
+  const blank = createBlankDesign();
+  const element = createElement(
+    blank,
+    { type: "section", section: "projects", showTitle: true, rule: true, columns: 1 },
+    { newId: () => "7b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e" },
+  );
+  return addElement(blank, element);
+}
 
 function signIn(options: FakeSupabaseOptions = {}) {
   const fake = createFakeSupabase(options);
@@ -41,9 +53,8 @@ beforeEach(() => {
 
 describe("template actions require the owner", () => {
   it.each([
-    ["getTemplateChoices", () => getTemplateChoices()],
-    ["saveCvAsTemplate", () => saveCvAsTemplate({})],
-    ["saveTemplate", () => saveTemplate({})],
+    ["createDesignTemplate", () => createDesignTemplate({ name: "A", locale: "en" })],
+    ["saveTemplateDesign", () => saveTemplateDesign({})],
     ["getTemplateRevision", () => getTemplateRevision(TEMPLATE_ID)],
     ["duplicateTemplate", () => duplicateTemplate(TEMPLATE_ID, "Copy")],
     ["deleteTemplate", () => deleteTemplate(TEMPLATE_ID)],
@@ -55,142 +66,96 @@ describe("template actions require the owner", () => {
   });
 });
 
-describe("getTemplateChoices", () => {
-  it("lists the owner's templates in a supported language only", async () => {
-    const fake = signIn({
-      tables: {
-        cv_templates: {
-          data: [
-            { id: "a", name: "Engineering", description: "", locale: "en" },
-            { id: "b", name: "Legacy", description: "", locale: "de" },
-          ],
-        },
-      },
-    });
+describe("createDesignTemplate", () => {
+  it("creates a blank A4 design, drawn by the canvas renderer", async () => {
+    const fake = signIn({ tables: { cv_templates: { data: { id: TEMPLATE_ID } } } });
 
-    expect(await getTemplateChoices()).toEqual({
+    expect(await createDesignTemplate({ name: " Untitled template ", locale: "fr" })).toEqual({
       ok: true,
-      data: [{ id: "a", name: "Engineering", description: "", locale: "en" }],
+      data: { id: TEMPLATE_ID },
     });
-    expect(isOwnerScoped(fake.queriesOn("cv_templates")[0])).toBe(true);
-  });
-
-  it("reports a failed read as unavailable", async () => {
-    signIn({ tables: { cv_templates: { error: { code: "08006" } } } });
-
-    expect(await getTemplateChoices()).toEqual({ ok: false, error: "unavailable" });
-  });
-});
-
-describe("saveCvAsTemplate", () => {
-  const source = { data: { locale: "fr", definition } };
-
-  it("copies a CV's setup into a new template", async () => {
-    const fake = signIn({
-      tables: { cv_documents: source, cv_templates: { data: { id: TEMPLATE_ID, name: "Design" } } },
-    });
-
-    const result = await saveCvAsTemplate({
-      mode: "new",
-      cvId: CV_ID,
-      name: " Design ",
-      description: "For studios",
-    });
-
-    expect(result).toEqual({ ok: true, data: { id: TEMPLATE_ID, name: "Design" } });
-    expect(isOwnerScoped(fake.queriesOn("cv_documents")[0])).toBe(true);
-    expect(callsOf(fake.queriesOn("cv_templates")[0], "insert")[0]?.[0]).toEqual({
+    const row = callsOf(fake.queriesOn("cv_templates")[0]!, "insert")[0]?.[0];
+    expect(row).toMatchObject({
+      owner_id: OWNER_ID,
+      name: "Untitled template",
       locale: "fr",
       schema_version: 1,
-      definition: JSON.parse(JSON.stringify(definition)),
-      owner_id: ownerContext(fake).owner.id,
-      name: "Design",
-      description: "For studios",
+      visual_template_key: "canvas-v1",
+      design: createBlankDesign(),
     });
-    // The builder keeps its undo history: no refresh.
-    expect(mocks.refresh).not.toHaveBeenCalled();
+    // A design places career content, it does not choose any.
+    expect(row).toMatchObject({ definition: { schemaVersion: 1, sections: [] } });
   });
 
-  it("replaces only the setup of an existing template, keeping its name", async () => {
-    const fake = signIn({
-      tables: { cv_documents: source, cv_templates: { data: { id: TEMPLATE_ID, name: "Kept" } } },
-    });
-
-    expect(
-      await saveCvAsTemplate({ mode: "replace", cvId: CV_ID, templateId: TEMPLATE_ID }),
-    ).toEqual({ ok: true, data: { id: TEMPLATE_ID, name: "Kept" } });
-    const update = fake.queriesOn("cv_templates")[0];
-    expect(isOwnerScoped(update)).toBe(true);
-    expect(Object.keys(callsOf(update, "update")[0]?.[0] as object).sort()).toEqual([
-      "definition",
-      "locale",
-      "schema_version",
-    ]);
-  });
-
-  it("reports a missing CV or template as not found", async () => {
-    signIn({ tables: { cv_documents: { data: null } } });
-    expect(
-      await saveCvAsTemplate({ mode: "new", cvId: CV_ID, name: "X", description: "" }),
-    ).toEqual({ ok: false, error: "not_found" });
-
-    signIn({ tables: { cv_documents: source, cv_templates: { data: null } } });
-    expect(
-      await saveCvAsTemplate({ mode: "replace", cvId: CV_ID, templateId: TEMPLATE_ID }),
-    ).toEqual({ ok: false, error: "not_found" });
-  });
-
-  it("refuses unreadable layouts and invalid input", async () => {
-    signIn({ tables: { cv_documents: { data: { locale: "en", definition: {} } } } });
-    expect(
-      await saveCvAsTemplate({ mode: "new", cvId: CV_ID, name: "X", description: "" }),
-    ).toEqual({ ok: false, error: "invalid_input" });
-    expect(await saveCvAsTemplate({ mode: "merge", cvId: CV_ID })).toMatchObject({
+  it("refuses invalid input, and reports a failed write", async () => {
+    signIn();
+    expect(await createDesignTemplate({ name: " ", locale: "en" })).toMatchObject({
       ok: false,
       error: "invalid_input",
     });
+
+    signIn({ tables: { cv_templates: { error: { code: "08006" } } } });
+    expect(await createDesignTemplate({ name: "A", locale: "en" })).toMatchObject({ ok: false });
   });
 });
 
-describe("saveTemplate", () => {
-  const input = {
+describe("saveTemplateDesign", () => {
+  const draft = () => ({
     id: TEMPLATE_ID,
     expectedRevision: 2,
-    name: "Engineering",
-    description: "",
+    name: "Sidebar",
     locale: "en",
     definition,
-  };
+    design: designWithProjects(),
+  });
 
-  it("saves over the expected revision only", async () => {
+  it("saves the name, preview language and design over the expected revision only", async () => {
     const fake = signIn({
-      tables: { cv_templates: { data: { revision: 3, updated_at: "2026-10-21T10:00:00Z" } } },
+      tables: { cv_templates: { data: { revision: 3, updated_at: "2026-10-23T10:00:00Z" } } },
     });
 
-    expect(await saveTemplate(input)).toEqual({
+    expect(await saveTemplateDesign(draft())).toEqual({
       ok: true,
-      data: { revision: 3, updatedAt: "2026-10-21T10:00:00Z" },
+      data: { revision: 3, updatedAt: "2026-10-23T10:00:00Z" },
     });
-    expect(callsOf(fake.queriesOn("cv_templates")[0], "eq")).toContainEqual(["revision", 2]);
+    const write = fake.queriesOn("cv_templates")[0]!;
+    expect(isOwnerScoped(write)).toBe(true);
+    expect(callsOf(write, "eq")).toEqual(
+      expect.arrayContaining([
+        ["id", TEMPLATE_ID],
+        ["revision", 2],
+        ["visual_template_key", "canvas-v1"],
+      ]),
+    );
+    // The composition the draft carries is never written.
+    expect(callsOf(write, "update")[0]?.[0]).toEqual({
+      name: "Sidebar",
+      locale: "en",
+      design: designWithProjects(),
+    });
   });
 
   it("tells a conflict from a deleted template", async () => {
     signIn({ tables: { cv_templates: [{ data: null }, { data: { id: TEMPLATE_ID } }] } });
-    expect(await saveTemplate(input)).toEqual({ ok: false, error: "stale" });
+    expect(await saveTemplateDesign(draft())).toEqual({ ok: false, error: "stale" });
 
     signIn({ tables: { cv_templates: [{ data: null }, { data: null }] } });
-    expect(await saveTemplate(input)).toEqual({ ok: false, error: "not_found" });
+    expect(await saveTemplateDesign(draft())).toEqual({ ok: false, error: "not_found" });
 
-    signIn({ tables: { cv_templates: { error: { message: "stale_record" } } } });
-    expect(await saveTemplate(input)).toEqual({ ok: false, error: "stale" });
+    signIn({ tables: { cv_templates: [{ data: null }, { error: { code: "08006" } }] } });
+    expect(await saveTemplateDesign(draft())).toEqual({ ok: false, error: "unavailable" });
+
+    signIn({ tables: { cv_templates: { error: { code: "08006" } } } });
+    expect(await saveTemplateDesign(draft())).toMatchObject({ ok: false });
   });
 
-  it("limits the description length", async () => {
+  it("refuses an invalid design", async () => {
     signIn();
-    const result = await saveTemplate({ ...input, description: "x".repeat(501) });
-    expect(result.ok ? [] : result.fieldIssues).toEqual([
-      { path: "description", message: "tooLong" },
-    ]);
+    const design = { ...designWithProjects(), pages: 4 };
+    expect(await saveTemplateDesign({ ...draft(), design })).toMatchObject({
+      ok: false,
+      error: "invalid_input",
+    });
   });
 });
 
@@ -199,10 +164,23 @@ describe("template revisions, copies and deletion", () => {
     signIn({ tables: { cv_templates: { data: { revision: 9 } } } });
     expect(await getTemplateRevision(TEMPLATE_ID)).toEqual({ ok: true, data: { revision: 9 } });
     expect(await getTemplateRevision("x")).toEqual({ ok: false, error: "invalid_input" });
+
+    signIn({ tables: { cv_templates: { data: null } } });
+    expect(await getTemplateRevision(TEMPLATE_ID)).toEqual({ ok: false, error: "not_found" });
+
+    signIn({ tables: { cv_templates: { error: { code: "08006" } } } });
+    expect(await getTemplateRevision(TEMPLATE_ID)).toEqual({ ok: false, error: "unavailable" });
   });
 
-  it("duplicates a template as an independent copy", async () => {
-    const source = { description: "d", locale: "en", schema_version: 1, definition };
+  it("duplicates a design as an independent copy", async () => {
+    const source = {
+      description: "d",
+      locale: "en",
+      schema_version: 1,
+      definition,
+      visual_template_key: "canvas-v1",
+      design: designWithProjects(),
+    };
     const fake = signIn({ tables: { cv_templates: [{ data: source }, { data: { id: "copy" } }] } });
 
     expect(await duplicateTemplate(TEMPLATE_ID, "Copy")).toEqual({
@@ -217,6 +195,17 @@ describe("template revisions, copies and deletion", () => {
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
   });
 
+  it("shortens a long copy name and refuses a malformed id", async () => {
+    const fake = signIn({
+      tables: { cv_templates: [{ data: { definition } }, { data: { id: "copy" } }] },
+    });
+    expect(await duplicateTemplate(TEMPLATE_ID, "x".repeat(200))).toMatchObject({ ok: true });
+    const row = callsOf(fake.queriesOn("cv_templates")[1], "insert")[0]?.[0] as { name: string };
+    expect(row.name).toHaveLength(120);
+
+    expect(await duplicateTemplate("x", "Copy")).toEqual({ ok: false, error: "invalid_input" });
+  });
+
   it("soft-deletes and restores without touching CVs made from the template", async () => {
     const fake = signIn({ tables: { cv_templates: { data: { id: TEMPLATE_ID } } } });
 
@@ -228,10 +217,18 @@ describe("template revisions, copies and deletion", () => {
     expect(fake.queries.flatMap((query) => callsOf(query, "delete"))).toHaveLength(0);
   });
 
-  it("reports templates that are already gone", async () => {
+  it("reports templates that are already gone, and failed reads", async () => {
     signIn({ tables: { cv_templates: { data: null } } });
 
     expect(await deleteTemplate(TEMPLATE_ID)).toEqual({ ok: false, error: "not_found" });
     expect(await duplicateTemplate(TEMPLATE_ID, "Copy")).toEqual({ ok: false, error: "not_found" });
+    expect(await deleteTemplate("x")).toEqual({ ok: false, error: "invalid_input" });
+
+    signIn({ tables: { cv_templates: { error: { code: "08006" } } } });
+    expect(await duplicateTemplate(TEMPLATE_ID, "Copy")).toEqual({
+      ok: false,
+      error: "unavailable",
+    });
+    expect(await deleteTemplate(TEMPLATE_ID)).toMatchObject({ ok: false });
   });
 });

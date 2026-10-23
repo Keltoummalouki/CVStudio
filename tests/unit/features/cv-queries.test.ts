@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultDefinition } from "@/features/cv-builder/defaults";
 import { isBlockingIssue, resolveCv } from "@/features/cv-builder/resolve";
+import { createBlankDesign } from "@/features/cv-design/design";
 import { buildMasterData, LABELS, sequentialIds } from "../../fixtures/master-data";
 import {
   callsOf,
@@ -19,7 +20,7 @@ vi.mock("@/features/cv-builder/server/load-master-data", () => ({
 
 const { getCvDocument, getPortraitUrl, listCvDocuments, summarizeIssues } =
   await import("@/features/cv-documents/server/queries");
-const { getTemplate, listTemplateChoices, listTemplates } =
+const { getTemplate, getTemplateGallery, listTemplateChoices } =
   await import("@/features/cv-templates/server/queries");
 const { loadExportableCv } = await import("@/features/cv-export/server/load-export");
 const { getDashboardOverview } = await import("@/features/dashboard/get-dashboard-overview");
@@ -153,6 +154,7 @@ describe("CV document queries", () => {
             updated_at: "t",
             created_from_template_name: null,
             definition,
+            design: null,
           },
         },
       },
@@ -166,7 +168,28 @@ describe("CV document queries", () => {
       updatedAt: "t",
       createdFromTemplateName: null,
       definition,
+      design: null,
     });
+  });
+
+  it("reads a CV's own design, and refuses a corrupt one", async () => {
+    const row = {
+      id: CV_ID,
+      name: "CV",
+      locale: "en",
+      revision: 3,
+      updated_at: "t",
+      created_from_template_name: "Sidebar",
+      definition,
+      design: createBlankDesign(),
+    };
+    signIn({ tables: { cv_documents: { data: row } } });
+    expect((await getCvDocument(CV_ID)).design).toEqual(createBlankDesign());
+
+    signIn({ tables: { cv_documents: { data: { ...row, design: { pages: 0 } } } } });
+    await expect(getCvDocument("4e9f6c1a-5b7d-4e2f-8a1c-9d0b2e4f6a8c")).rejects.toThrow(
+      "read CV design",
+    );
   });
 
   it("answers 404 for another owner's or a deleted CV, and refuses corrupt layouts", async () => {
@@ -190,20 +213,15 @@ describe("CV document queries", () => {
 });
 
 describe("template queries", () => {
-  it("counts the live CVs made from each template", async () => {
+  const design = createBlankDesign();
+
+  it("lists the owner's designs with the CVs made from each, and Classic", async () => {
     const fake = signIn({
       tables: {
         cv_templates: {
           data: [
-            { id: "t1", name: "A", description: "", locale: "en", definition, updated_at: "t" },
-            {
-              id: "t2",
-              name: "B",
-              description: "d",
-              locale: "fr",
-              definition: {},
-              updated_at: "t",
-            },
+            { id: "t1", name: "A", description: "", design, updated_at: "t" },
+            { id: "t2", name: "B", description: "d", design, updated_at: "t" },
           ],
         },
         cv_documents: {
@@ -216,69 +234,91 @@ describe("template queries", () => {
       },
     });
 
-    const templates = await listTemplates();
+    const { templates, preview, classic } = await getTemplateGallery("en");
 
-    expect(
-      templates.map(({ id, cvCount, missingTranslations }) => ({
-        id,
-        cvCount,
-        missingTranslations,
-      })),
-    ).toEqual([
-      { id: "t1", cvCount: 2, missingTranslations: 0 },
-      { id: "t2", cvCount: 0, missingTranslations: null },
+    expect(templates).toEqual([
+      { id: "t1", name: "A", description: "", updatedAt: "t", cvCount: 2, design },
+      { id: "t2", name: "B", description: "d", updatedAt: "t", cvCount: 0, design },
     ]);
+    // Designs only: setups saved from CVs before designs existed are retired.
+    const list = fake.queriesOn("cv_templates")[0]!;
+    expect(isOwnerScoped(list)).toBe(true);
+    expect(callsOf(list, "eq")).toContainEqual(["visual_template_key", "canvas-v1"]);
+    // Thumbnails show all career data, in the page language; Classic too.
+    const kinds = resolveCv(definition, master, "en", LABELS.en).cv.sections.map(
+      (section) => section.kind,
+    );
+    expect(preview.cv.sections.map((section) => section.kind)).toEqual(kinds);
+    expect(preview.definition.sections).toHaveLength(definition.sections.length);
+    expect(classic).toBe(preview.cv);
+    expect(classic.locale).toBe("en");
+    expect(mocks.loadMasterData).toHaveBeenCalledTimes(1);
     const counts = fake.queriesOn("cv_documents")[0];
     expect(isOwnerScoped(counts)).toBe(true);
     expect(callsOf(counts, "is")).toContainEqual(["deleted_at", null]);
   });
 
-  it("fails when templates or their CV counts cannot be read", async () => {
+  it("fails when templates, their CV counts or a design cannot be read", async () => {
     signIn({ tables: { cv_templates: { error: { code: "x" } } } });
-    await expect(listTemplates()).rejects.toThrow("list templates");
+    await expect(getTemplateGallery("en")).rejects.toThrow("list templates");
 
     signIn({ tables: { cv_templates: { data: [] }, cv_documents: { error: { code: "x" } } } });
-    await expect(listTemplates()).rejects.toThrow("count CVs per template");
-  });
+    await expect(getTemplateGallery("en")).rejects.toThrow("count CVs per template");
 
-  it("offers the owner's templates as choices", async () => {
-    signIn({
-      tables: { cv_templates: { data: [{ id: "t1", name: "A", description: "", locale: "fr" }] } },
-    });
-
-    expect(await listTemplateChoices()).toEqual([
-      { id: "t1", name: "A", description: "", locale: "fr" },
-    ]);
-  });
-
-  it("reads one template, or answers 404", async () => {
     signIn({
       tables: {
         cv_templates: {
-          data: {
-            id: "t1",
-            name: "A",
-            description: "",
-            locale: "en",
-            revision: 1,
-            updated_at: "t",
-            definition,
-          },
+          data: [{ id: "t1", name: "A", description: "", design: { pages: 9 }, updated_at: "t" }],
         },
+        cv_documents: { data: [] },
       },
     });
-    expect(await getTemplate("t1")).toMatchObject({ id: "t1", revision: 1, definition });
+    await expect(getTemplateGallery("en")).rejects.toThrow("read template design");
+  });
 
+  it("offers the owner's designs as choices for a new CV", async () => {
+    const fake = signIn({
+      tables: { cv_templates: { data: [{ id: "t1", name: "A", description: "" }] } },
+    });
+
+    expect(await listTemplateChoices()).toEqual([{ id: "t1", name: "A", description: "" }]);
+    expect(callsOf(fake.queriesOn("cv_templates")[0]!, "eq")).toContainEqual([
+      "visual_template_key",
+      "canvas-v1",
+    ]);
+  });
+
+  it("reads one design, or answers 404", async () => {
+    const row = {
+      id: "t1",
+      name: "A",
+      locale: "en",
+      revision: 1,
+      updated_at: "t",
+      definition,
+      design,
+    };
+    const fake = signIn({ tables: { cv_templates: { data: row } } });
+    expect(await getTemplate("t1")).toMatchObject({ id: "t1", revision: 1, definition, design });
+    expect(callsOf(fake.queriesOn("cv_templates")[0]!, "eq")).toContainEqual([
+      "visual_template_key",
+      "canvas-v1",
+    ]);
+
+    // Another owner's row, or a retired CV setup, is simply not found.
     signIn({ tables: { cv_templates: { data: null } } });
     await expect(getTemplate("t1")).rejects.toThrow(NOT_FOUND);
 
-    signIn({ tables: { cv_templates: { data: { id: "t1", locale: "en", definition: null } } } });
+    signIn({ tables: { cv_templates: { data: { ...row, definition: null } } } });
     await expect(getTemplate("t1")).rejects.toThrow("read template definition");
+
+    signIn({ tables: { cv_templates: { data: { ...row, design: { elements: "x" } } } } });
+    await expect(getTemplate("t1")).rejects.toThrow("read template design");
   });
 });
 
 describe("loadExportableCv", () => {
-  const document = { id: CV_ID, name: "CV", locale: "fr", definition };
+  const document = { id: CV_ID, name: "CV", locale: "fr", definition, design: null };
 
   it("resolves the CV like the preview and counts what blocks export", async () => {
     const fake = createFakeSupabase({

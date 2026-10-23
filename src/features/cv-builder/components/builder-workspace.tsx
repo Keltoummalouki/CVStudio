@@ -17,6 +17,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useElementLabel } from "@/features/cv-design/components/use-element-label";
+import type { Design } from "@/features/cv-design/design";
+import type { LayoutIssue } from "@/features/cv-design/layout";
 import { CV_NAME_MAX } from "@/features/cv-documents/schemas";
 import { LOCALES, type Locale } from "@/lib/i18n/config";
 import { Link } from "@/lib/i18n/navigation";
@@ -34,14 +37,20 @@ import { HEADER_TARGET, SectionOutline } from "./section-outline";
 import { useBuilderAutosave, type BuilderDraft } from "./use-builder-autosave";
 import { useHistory } from "./use-history";
 
-function isTextInput(target: EventTarget | null) {
+export function isTextInput(target: EventTarget | null) {
   return (
     target instanceof HTMLElement &&
     (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
   );
 }
 
-function LocaleChoice({ value, onChange }: { value: Locale; onChange: (locale: Locale) => void }) {
+export function LocaleChoice({
+  value,
+  onChange,
+}: {
+  value: Locale;
+  onChange: (locale: Locale) => void;
+}) {
   const t = useTranslations("cvBuilder.toolbar");
   const tLanguages = useTranslations("languages");
   return (
@@ -73,7 +82,7 @@ function LocaleChoice({ value, onChange }: { value: Locale; onChange: (locale: L
   );
 }
 
-function NameField({
+export function NameField({
   value,
   label,
   hint,
@@ -168,7 +177,51 @@ type BuilderWorkspaceProps<D extends BuilderDraft> = {
   menu: React.ReactNode;
   /** Shown above the profile details when the header is selected. */
   headerIntro?: React.ReactNode;
+  /** The CV's own free-form design, drawn instead of Classic. */
+  design?: Design | null;
+  /** What the design cuts off, pushes off the page or overlaps: it blocks export. */
+  layoutIssues?: readonly LayoutIssue[];
+  onLayoutIssues?: (issues: LayoutIssue[]) => void;
 };
+
+/** Text the CV's design cannot hold, by element, above the preview. */
+function LayoutIssuesNotice({
+  issues,
+  design,
+  master,
+  locale,
+}: {
+  issues: readonly LayoutIssue[];
+  design: Design;
+  master: MasterData;
+  locale: Locale;
+}) {
+  const t = useTranslations("cvBuilder.layout");
+  const tIssues = useTranslations("designer.issues");
+  const labelOf = useElementLabel(master, locale);
+  const nameOf = (id: string) => {
+    const element = design.elements.find((item) => item.id === id);
+    return element ? labelOf(element.content) : "";
+  };
+  return (
+    <div
+      role="status"
+      className="mx-auto mb-4 max-w-[210mm] space-y-2 rounded-lg border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm"
+    >
+      <p className="font-medium text-destructive">{t("title", { count: issues.length })}</p>
+      <ul className="list-disc space-y-0.5 pl-5 text-[0.8125rem] text-destructive">
+        {issues.map((issue, index) => (
+          <li key={index}>
+            {issue.kind === "overlap"
+              ? tIssues("overlap", { name: nameOf(issue.id), other: nameOf(issue.other) })
+              : tIssues(issue.kind, { name: nameOf(issue.id) })}
+          </li>
+        ))}
+      </ul>
+      <p className="text-[0.8125rem] leading-relaxed text-foreground">{t("hint")}</p>
+    </div>
+  );
+}
 
 /**
  * The builder layout: toolbar, section outline, editor and live A4 preview,
@@ -187,6 +240,9 @@ export function BuilderWorkspace<D extends BuilderDraft>({
   actions,
   menu,
   headerIntro,
+  design = null,
+  layoutIssues = [],
+  onLayoutIssues,
 }: BuilderWorkspaceProps<D>) {
   const t = useTranslations("cvBuilder");
   const headingId = useId();
@@ -462,12 +518,23 @@ export function BuilderWorkspace<D extends BuilderDraft>({
               view === "edit" && "hidden xl:block",
             )}
           >
+            {design && layoutIssues.length > 0 ? (
+              <LayoutIssuesNotice
+                issues={layoutIssues}
+                design={design}
+                master={master}
+                locale={draft.locale}
+              />
+            ) : null}
             <CvPreview
               cv={cv}
               labels={labels[draft.locale]}
               photoUrl={photoUrl}
               selectedNodeId={selectedSection?.nodeId ?? null}
               onSelectSection={select}
+              design={design}
+              definition={draft.definition}
+              onLayoutIssues={onLayoutIssues}
               className="mx-auto max-w-[210mm]"
             />
           </aside>

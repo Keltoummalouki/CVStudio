@@ -457,10 +457,9 @@
         "classicHint": "Votre mise en page de référence avec toutes les entrées actives de vos données de carrière.",
         "builtIn": "Inclus",
         "classicNote": "Le CV démarre avec toutes vos données de carrière actuelles, dans l’ordre de référence. Gardez ensuite ce qui convient à cette candidature.",
-        "makeYourOwn": "Vos propres modèles apparaîtront ici. Pour en enregistrer un, ouvrez un CV et choisissez Autres actions → Enregistrer comme modèle.",
-        "savedHint": "Un modèle enregistré.",
-        "savedLanguage": "Enregistré en {language}",
-        "savedNote": "Le CV copie les sections, l’ordre et les formulations du modèle, remplis avec vos données de carrière les plus récentes. Les entrées ajoutées depuis l’enregistrement du modèle ne sont pas incluses : ajoutez-les dans le CV."
+        "makeYourOwn": "Les modèles que vous concevez apparaissent ici. Créez-en un dans Modèles.",
+        "savedHint": "Un modèle que vous avez conçu.",
+        "savedNote": "Le CV utilise cette mise en page, remplie avec toutes vos données de carrière actuelles. Gardez ensuite ce qui convient à cette candidature."
       },
       "forJob": "Pour l’offre « {title} » : nommé d’après elle et dans sa langue. Sa page montre ensuite dans quelle mesure ce CV y répond."
     },
@@ -729,8 +728,7 @@
       "renameHint": "Cliquez pour renommer ce CV",
       "downloadLabel": "Télécharger le PDF",
       "preparing": "Préparation…",
-      "exportBlocked": "{count, plural, one {Traduisez # texte} other {Traduisez # textes}} avant d’imprimer ou d’exporter.",
-      "saveAsTemplate": "Enregistrer comme modèle…"
+      "exportBlocked": "{count, plural, one {Traduisez # texte} other {Traduisez # textes}} avant d’imprimer ou d’exporter."
     },
     "conflict": {
       "message": "Ce CV a été modifié dans un autre onglet ou appareil. Vos dernières modifications ne sont pas enregistrées.",
@@ -751,6 +749,11 @@
     },
     "workspace": {
       "headerHint": "Soignez votre première impression. Choisissez les informations du profil à afficher sur ce CV."
+    },
+    "layout": {
+      "title": "{count, plural, one {La mise en page ne convient pas au contenu de ce CV à # endroit} other {La mise en page ne convient pas au contenu de ce CV à # endroits}}",
+      "hint": "Rien n’est imprimé ni exporté tant que tout ne tient pas : masquez ou raccourcissez des entrées de ce CV, ou ajustez la mise en page.",
+      "exportBlocked": "{count, plural, one {Corrigez # problème de mise en page} other {Corrigez # problèmes de mise en page}} avant l’export : du texte serait coupé ou se chevaucherait."
     }
   },
   "cvExport": {
@@ -767,21 +770,25 @@
       "not_found": "Ce CV n’existe plus.",
       "missing_translations": "{count, plural, one {Traduisez # texte} other {Traduisez # textes}} avant d’exporter ce CV.",
       "rate_limited": "Plusieurs PDF viennent d’être créés. Patientez une minute, puis réessayez.",
-      "unavailable": "Le PDF n’a pas pu être créé. Réessayez, ou utilisez Imprimer puis « Enregistrer au format PDF »."
+      "unavailable": "Le PDF n’a pas pu être créé. Réessayez, ou utilisez Imprimer puis « Enregistrer au format PDF ».",
+      "layout_issues": "{count, plural, one {Corrigez # problème de mise en page} other {Corrigez # problèmes de mise en page}} de ce CV avant l’export."
     },
     "blocked": {
       "title": "Ce CV ne peut pas encore être imprimé",
       "description": "{count, plural, one {# texte n’est pas encore rédigé} other {# textes ne sont pas encore rédigés}} en {language}. Traduisez-les dans vos données de carrière, reformulez-les pour ce CV, ou masquez-les.",
       "action": "Ouvrir dans l’éditeur"
+    },
+    "layout": {
+      "description": "{count, plural, one {La mise en page de ce CV coupe ou superpose du texte à # endroit} other {La mise en page de ce CV coupe ou superpose du texte à # endroits}} : il n’est donc pas imprimé.",
+      "action": "Ouvrir dans l’éditeur"
     }
   },
   "templates": {
     "title": "Modèles",
-    "description": "Des configurations de CV réutilisables : sections, ordre, entrées choisies et formulations. En utiliser une crée un nouveau CV ; cela ne modifie jamais les CV existants.",
+    "description": "Vos mises en page de CV : placez votre nom, vos sections, du texte et des formes sur la page. En utiliser une démarre un nouveau CV sans jamais modifier les CV existants.",
     "empty": {
-      "title": "Aucun modèle pour l’instant",
-      "description": "Ouvrez un CV et choisissez Autres actions → Enregistrer comme modèle. Un modèle démarre de nouveaux CV avec les mêmes sections, le même ordre et les mêmes formulations, remplis avec vos données de carrière les plus récentes.",
-      "goToCvs": "Aller aux CV"
+      "title": "Aucun modèle personnel pour l’instant",
+      "description": "Créez-en un : vous partez d’une page A4 vierge et la composez à votre façon."
     },
     "concepts": {
       "title": "Comment tout s’articule",
@@ -791,7 +798,7 @@
       },
       "template": {
         "term": "Modèle",
-        "definition": "Une copie enregistrée de la configuration d’un CV, pour démarrer de nouveaux CV. Il ne contient aucune donnée de carrière."
+        "definition": "Une mise en page : où se placent votre nom, vos sections et vos textes, et leur apparence. Elle ne contient aucune donnée de carrière."
       },
       "style": {
         "term": "Style visuel",
@@ -799,20 +806,13 @@
       }
     },
     "visualStyle": {
-      "title": "Style visuel",
       "name": "Classique",
       "description": "A4 portrait, Poppins, filets fins, compétences sur deux colonnes et dates alignées à droite, reproduits d’après votre CV de référence.",
       "included": "Inclus"
     },
     "library": {
       "title": "Vos modèles",
-      "howToAdd": "Pour en ajouter un, ouvrez un CV et choisissez Autres actions → Enregistrer comme modèle."
-    },
-    "status": {
-      "unreadable": "Mise en page illisible",
-      "toTranslate": "{count, plural, one {# texte à traduire} other {# textes à traduire}}",
-      "warnings": "{count, plural, one {# avertissement} other {# avertissements}}",
-      "ready": "Prêt à l’emploi"
+      "howToAdd": "Partez d’une page A4 vierge, puis faites glisser, redimensionnez et mettez en forme chaque élément."
     },
     "updated": "Modifié le {date}",
     "usedBy": "{count, plural, =0 {Aucun CV créé à partir de ce modèle} one {Utilisé pour # CV} other {Utilisé pour # CV}}",
@@ -828,64 +828,10 @@
     "actionFailed": "Cela n’a pas fonctionné. Rien n’a été modifié.",
     "deleteTitle": "Supprimer « {name} » ?",
     "deleteDescription": "{count, plural, =0 {Le modèle disparaît de vos listes. Vos CV et vos données de carrière ne sont pas touchés.} one {Le modèle disparaît de vos listes. Le CV créé à partir de lui reste exactement tel quel.} other {Le modèle disparaît de vos listes. Les # CV créés à partir de lui restent exactement tels quels.}}",
-    "saveDialog": {
-      "title": "Enregistrer comme modèle",
-      "description": "Un modèle conserve les sections, l’ordre, les entrées choisies et les formulations de ce CV, pour démarrer de nouveaux CV. Il ne stocke aucune donnée de carrière : les nouveaux CV utilisent vos données les plus récentes.",
-      "modeLabel": "Enregistrer comme",
-      "modes": {
-        "new": {
-          "title": "Nouveau modèle",
-          "description": "Conserver cette configuration sous un nouveau nom."
-        },
-        "replace": {
-          "title": "Remplacer un modèle",
-          "description": "Mettre à jour un modèle existant avec cette configuration."
-        }
-      },
-      "name": "Nom du modèle",
-      "descriptionLabel": "Description",
-      "descriptionHint": "Elle n’est visible que par vous. Notez quand utiliser ce modèle.",
-      "replaceLabel": "Modèle à remplacer",
-      "replaceWarning": "« {name} » reprendra les sections, l’ordre, les formulations et la langue de ce CV. Son nom et sa description restent. Les CV déjà créés à partir de lui ne changent pas.",
-      "submitNew": "Enregistrer le modèle",
-      "submitReplace": "Remplacer le modèle",
-      "cancel": "Annuler",
-      "created": "Modèle « {name} » enregistré",
-      "replaced": "Modèle « {name} » mis à jour",
-      "openTemplate": "Ouvrir",
-      "errors": {
-        "invalid_input": "Vérifiez le nom et la description, puis réessayez.",
-        "stale": "Quelque chose a changé entre-temps. Réessayez.",
-        "not_found": "Ce CV ou ce modèle n’existe plus.",
-        "unauthorized": "Votre session a expiré. Reconnectez-vous pour continuer.",
-        "unavailable": "Le modèle n’a pas pu être enregistré. Vérifiez votre connexion et réessayez."
-      }
-    },
-    "editor": {
-      "back": "Retour aux modèles",
-      "name": "Nom du modèle",
-      "renameHint": "Cliquez pour renommer ce modèle",
-      "intro": "Vous modifiez un modèle, affiché avec vos données de carrière actuelles. Les changements s’appliquent aux CV que vous créerez ensuite à partir de lui, jamais aux CV existants.",
-      "descriptionLabel": "Description",
-      "descriptionHint": "Elle n’est visible que par vous. Notez quand utiliser ce modèle.",
-      "use": "Nouveau CV depuis ce modèle",
-      "duplicate": "Dupliquer",
-      "delete": "Supprimer le modèle",
-      "copyName": "Copie de {name}",
-      "duplicated": "Dupliqué. Vous modifiez maintenant la copie.",
-      "deleted": "« {name} » supprimé",
-      "undo": "Annuler",
-      "actionFailed": "Cela n’a pas fonctionné. Rien n’a été modifié.",
-      "deleteTitle": "Supprimer « {name} » ?",
-      "deleteDescription": "Le modèle disparaît de vos listes. Les CV créés à partir de lui restent exactement tels quels.",
-      "conflict": "Ce modèle a été modifié dans un autre onglet ou appareil. Vos dernières modifications ne sont pas enregistrées.",
-      "saveErrors": {
-        "invalid_input": "Un contenu est trop long ou invalide : il n’a pas pu être enregistré.",
-        "stale": "Ce modèle a été modifié ailleurs.",
-        "not_found": "Ce modèle n’existe plus. Il a peut-être été supprimé dans un autre onglet.",
-        "unauthorized": "Votre session a expiré. Reconnectez-vous dans un nouvel onglet, puis réessayez.",
-        "unavailable": "Enregistrement impossible. Vos modifications sont conservées ici ; vérifiez votre connexion et réessayez."
-      }
+    "create": "Créer un modèle",
+    "included": {
+      "title": "Inclus",
+      "description": "Prêts à l’emploi, remplis avec vos données de carrière actuelles."
     }
   },
   "jobs": {
@@ -1351,6 +1297,147 @@
         "first": "Un titre de section et des sous-sections pour organiser le contenu.",
         "second": "Des paragraphes, des listes à puces ou de courts textes avec libellés."
       }
+    }
+  },
+  "designer": {
+    "untitled": "Modèle sans titre",
+    "back": "Modèles",
+    "name": "Nom du modèle",
+    "renameHint": "Il n’est visible que par vous. Nommez-le d’après son style ou le type de poste.",
+    "create": "Créer un modèle",
+    "creating": "Création…",
+    "createFailed": "Le modèle n’a pas pu être créé. Vérifiez votre connexion et réessayez.",
+    "more": "Autres actions",
+    "use": "Utiliser pour un nouveau CV",
+    "duplicate": "Dupliquer",
+    "delete": "Supprimer le modèle",
+    "copyName": "Copie de {name}",
+    "duplicated": "Modèle dupliqué",
+    "deleted": "« {name} » supprimé",
+    "undoDelete": "Annuler",
+    "actionFailed": "Cela n’a pas fonctionné. Rien n’a été modifié.",
+    "deleteTitle": "Supprimer « {name} » ?",
+    "deleteDescription": "Le modèle disparaît de vos listes. Les CV créés à partir de lui gardent leur propre copie de la mise en page.",
+    "conflict": "Ce modèle a été modifié dans un autre onglet ou sur un autre appareil.",
+    "saveErrors": {
+      "invalid_input": "Cette mise en page n’a pas pu être enregistrée : un élément n’est pas valide. Annulez la dernière modification.",
+      "stale": "Quelque chose a changé entre-temps.",
+      "not_found": "Ce modèle n’existe plus.",
+      "unauthorized": "Votre session a expiré. Reconnectez-vous pour garder vos modifications.",
+      "unavailable": "Enregistrement impossible. Vérifiez votre connexion ; vos modifications sont conservées ici."
+    },
+    "palette": {
+      "title": "Éléments",
+      "hint": "Cliquez sur un élément pour l’ajouter à la page, puis faites-le glisser où vous voulez.",
+      "profile": "Profil",
+      "sections": "Sections de carrière",
+      "basics": "Bases",
+      "add": "Ajouter {name}",
+      "placed": "Sur la page"
+    },
+    "elements": {
+      "name": "Nom",
+      "title": "Titre professionnel",
+      "contacts": "Coordonnées",
+      "links": "Liens",
+      "text": "Texte",
+      "photo": "Photo",
+      "line": "Ligne",
+      "shape": "Forme"
+    },
+    "defaultText": "Votre texte",
+    "canvas": {
+      "label": "Zone de conception",
+      "page": "Page {number, number}",
+      "frame": "{name}, à {x, number} sur {y, number} mm, {w, number} sur {h, number} mm",
+      "keys": "Les flèches le déplacent, Maj pour 5 mm. Ctrl ou Commande avec les flèches le redimensionne. Suppr le retire.",
+      "moved": "{name} déplacé à {x, number} sur {y, number} mm",
+      "resized": "{name} redimensionné à {w, number} sur {h, number} mm",
+      "added": "{name} ajouté",
+      "removed": "{name} retiré",
+      "empty": "{name} : rien à afficher pour l’instant",
+      "emptyPage": "Ajoutez des éléments depuis la liste : votre nom, vos sections, du texte, des lignes et des formes."
+    },
+    "properties": {
+      "title": "Propriétés",
+      "position": "Position et taille",
+      "x": "X",
+      "y": "Y",
+      "width": "Largeur",
+      "height": "Hauteur",
+      "minHeight": "Hauteur minimale",
+      "mm": "mm",
+      "pt": "pt",
+      "autoHeight": "S’agrandir pour le texte",
+      "autoHeightHint": "Le cadre s’agrandit vers le bas au lieu de couper le texte.",
+      "page": "Page",
+      "content": "Contenu",
+      "showTitle": "Afficher le titre",
+      "rule": "Ligne sous le titre",
+      "columns": "Deux colonnes",
+      "inline": "Sur une ligne",
+      "textEn": "Texte en anglais",
+      "textFr": "Texte en français",
+      "shape": "Forme",
+      "shapes": {
+        "circle": "Cercle",
+        "rounded": "Arrondie",
+        "square": "Carrée"
+      },
+      "text": "Texte",
+      "font": "Police",
+      "fonts": {
+        "poppins": "Poppins",
+        "inter": "Inter",
+        "lora": "Lora (avec empattements)"
+      },
+      "size": "Taille",
+      "bold": "Gras",
+      "align": "Alignement",
+      "aligns": {
+        "left": "Gauche",
+        "center": "Centre",
+        "right": "Droite"
+      },
+      "lineHeight": "Interligne",
+      "uppercase": "Majuscules",
+      "color": "Couleur du texte",
+      "accent": "Couleur d’accent",
+      "lineColor": "Couleur de la ligne",
+      "lineWidth": "Épaisseur",
+      "box": "Cadre",
+      "background": "Fond",
+      "noBackground": "Sans fond",
+      "border": "Bordure",
+      "borderColor": "Couleur de la bordure",
+      "radius": "Arrondi des coins",
+      "padding": "Marge intérieure",
+      "duplicate": "Dupliquer",
+      "remove": "Retirer",
+      "deselect": "Terminé"
+    },
+    "page": {
+      "title": "Page",
+      "background": "Fond de la page",
+      "pages": "Pages",
+      "addPage": "Ajouter une page",
+      "removePage": "Retirer la dernière page",
+      "removePageBlocked": "Déplacez ou retirez d’abord les éléments de la dernière page.",
+      "readingOrder": "Ordre de lecture",
+      "readingOrderHint": "L’ordre dans lequel les logiciels de recrutement et le copier-coller lisent votre CV. Les formes, les lignes et la photo ne sont pas lues.",
+      "sort": "Trier de haut en bas",
+      "up": "Lire {name} plus tôt",
+      "down": "Lire {name} plus tard",
+      "noText": "Pas encore de texte sur la page."
+    },
+    "issues": {
+      "title": "À corriger avant l’export",
+      "none": "Rien à corriger : tout le texte tient sur la page.",
+      "clipped": "{name} : le texte ne tient pas dans son cadre.",
+      "offPage": "{name} : dépasse le bas de la page.",
+      "overlap": "{name} chevauche {other}.",
+      "count": "{count, plural, one {# point à corriger} other {# points à corriger}}",
+      "select": "Sélectionner {name}"
     }
   }
 }

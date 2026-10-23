@@ -4,8 +4,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ScanIcon, ZoomInIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { measureLayout } from "@/features/cv-design/components/measure-layout";
+import type { Design } from "@/features/cv-design/design";
+import { layoutIssues, type LayoutIssue } from "@/features/cv-design/layout";
+import { CanvasCv } from "@/features/cv-renderer/canvas-v1/canvas-cv";
 import { ClassicCv, PAGE_MARGINS_MM } from "@/features/cv-renderer/classic-reference-v1/classic-cv";
 import { cn } from "@/lib/utils";
+import type { CvDefinition } from "../definition";
 import type { CvLabels } from "../labels";
 import type { ResolvedCv } from "../resolve";
 
@@ -32,6 +37,9 @@ export function CvPreview({
   photoUrl,
   selectedNodeId,
   onSelectSection,
+  design = null,
+  definition,
+  onLayoutIssues,
   className,
 }: {
   cv: ResolvedCv;
@@ -39,11 +47,35 @@ export function CvPreview({
   photoUrl: string | null;
   selectedNodeId: string | null;
   onSelectSection?: (nodeId: string) => void;
+  /** A free-form design draws the CV instead of Classic, on its own pages. */
+  design?: Design | null;
+  /** The composition `cv` was resolved from: binds sections to the design's elements. */
+  definition?: CvDefinition;
+  /** Text the design cuts off, pushes off the page or overlaps, as measured here. */
+  onLayoutIssues?: (issues: LayoutIssue[]) => void;
   className?: string;
 }) {
   const t = useTranslations("cvBuilder.preview");
   const frameRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const lastIssues = useRef("");
+  const canvas = design !== null && definition !== undefined;
+
+  // A design's text is laid out by the browser: measure it after each render.
+  useIsomorphicLayoutEffect(() => {
+    const sheet = sheetRef.current;
+    if (!canvas || !sheet || !onLayoutIssues) return;
+    const report = () => {
+      const issues = layoutIssues(design, measureLayout(sheet));
+      const key = JSON.stringify(issues);
+      if (key === lastIssues.current) return;
+      lastIssues.current = key;
+      onLayoutIssues(issues);
+    };
+    report();
+    // Webfonts change text metrics once they arrive.
+    void document.fonts?.ready.then(report);
+  });
   const [fitScale, setFitScale] = useState(0.5);
   const [zoom, setZoom] = useState<"fit" | "actual">("fit");
   const scale = zoom === "actual" ? 1 : fitScale;
@@ -79,14 +111,18 @@ export function CvPreview({
   // The continuous sheet only has the first page's top margin: page 1 holds
   // FIRST_PAGE_CONTENT, every later page PAGE_CONTENT.
   const content = height - FIRST_TOP - MARGIN_BOTTOM;
-  const pages =
-    content <= FIRST_PAGE_CONTENT + 1
+  // A design has its own pages; Classic flows onto as many as it needs.
+  const pages = canvas
+    ? design.pages
+    : content <= FIRST_PAGE_CONTENT + 1
       ? 1
       : 1 + Math.ceil((content - FIRST_PAGE_CONTENT - 1) / PAGE_CONTENT);
-  const breaks = Array.from(
-    { length: pages - 1 },
-    (_, index) => FIRST_TOP + FIRST_PAGE_CONTENT + index * PAGE_CONTENT,
-  );
+  const breaks = canvas
+    ? []
+    : Array.from(
+        { length: pages - 1 },
+        (_, index) => FIRST_TOP + FIRST_PAGE_CONTENT + index * PAGE_CONTENT,
+      );
 
   return (
     <div className={cn("flex min-w-0 flex-col gap-4", className)}>
@@ -154,7 +190,17 @@ export function CvPreview({
             )}
             style={{ transform: `scale(${scale})`, width: PAGE_WIDTH }}
           >
-            <ClassicCv cv={cv} labels={labels} photoUrl={photoUrl} />
+            {canvas ? (
+              <CanvasCv
+                design={design}
+                definition={definition}
+                cv={cv}
+                labels={labels}
+                photoUrl={photoUrl}
+              />
+            ) : (
+              <ClassicCv cv={cv} labels={labels} photoUrl={photoUrl} />
+            )}
           </div>
           {breaks.map((top, index) => (
             <div

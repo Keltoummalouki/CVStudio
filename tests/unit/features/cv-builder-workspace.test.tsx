@@ -22,17 +22,17 @@ vi.mock("@/lib/i18n/navigation", async (importOriginal) => ({
   useRouter: () => mocks.router,
 }));
 vi.mock("sonner", () => ({ toast: mocks.toast }));
-vi.mock("@/features/cv-renderer/fonts", () => ({ poppins: { className: "font-poppins" } }));
+vi.mock("@/features/cv-renderer/fonts", () => ({
+  poppins: { className: "font-poppins" },
+  inter: { className: "font-inter" },
+  lora: { className: "font-lora" },
+}));
 vi.mock("@/features/cv-documents/server/actions", () => ({
   saveCv: mocks.saveCv,
   getCvRevision: mocks.getCvRevision,
   duplicateCv: mocks.duplicateCv,
   deleteCv: mocks.deleteCv,
   restoreCv: mocks.restoreCv,
-}));
-vi.mock("@/features/cv-templates/server/actions", () => ({
-  getTemplateChoices: vi.fn(async () => ({ ok: true, data: [] })),
-  saveCvAsTemplate: vi.fn(),
 }));
 
 const { CvBuilder } = await import("@/features/cv-builder/components/cv-builder");
@@ -50,6 +50,7 @@ function cvDocument(overrides: Partial<CvDocument> = {}): CvDocument {
     updatedAt: "2026-10-21T09:00:00Z",
     createdFromTemplateName: null,
     definition: createDefaultDefinition(master, sequentialIds()),
+    design: null,
     ...overrides,
   };
 }

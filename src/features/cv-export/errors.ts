@@ -3,6 +3,7 @@ export const PDF_ERROR_CODES = [
   "unauthorized",
   "not_found",
   "missing_translations",
+  "layout_issues",
   "rate_limited",
   "unavailable",
 ] as const;

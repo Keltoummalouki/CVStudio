@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { loadMasterData } from "@/features/cv-builder/server/load-master-data";
 import { getCvLabels } from "@/features/cv-documents/server/labels";
 import { getPortraitUrl } from "@/features/cv-documents/server/queries";
-import { TemplateBuilder } from "@/features/cv-templates/components/template-builder";
+import { TemplateDesigner } from "@/features/cv-templates/components/template-designer";
 import { getTemplate } from "@/features/cv-templates/server/queries";
 import { requireOwner } from "@/lib/auth/session";
 import { requireUuid } from "@/lib/data/params";
@@ -26,9 +26,9 @@ export default async function Page({ params }: Props) {
     getPortraitUrl(),
   ]);
 
-  // A new revision (e.g. "load latest" after a conflict) remounts the editor with fresh state.
+  // A new revision (e.g. "load latest" after a conflict) remounts the designer with fresh state.
   return (
-    <TemplateBuilder
+    <TemplateDesigner
       key={`${template.id}:${template.revision}`}
       template={template}
       master={master}

@@ -1,40 +1,27 @@
 import { z } from "zod";
-import { definitionSchema } from "@/features/cv-builder/definition";
 import { cvLocaleSchema, cvNameSchema } from "@/features/cv-documents/schemas";
+import { designSchema } from "@/features/cv-design/design";
 
 export const TEMPLATE_NAME_MAX = 120;
-export const TEMPLATE_DESCRIPTION_MAX = 500;
 
 /** Same limits as a CV name (and the cv_templates check constraint). */
 export const templateNameSchema = cvNameSchema;
 
-export const templateDescriptionSchema = z
-  .string()
-  .trim()
-  .max(TEMPLATE_DESCRIPTION_MAX, { error: "tooLong" });
-
-export const newTemplateDetailsSchema = z.object({
+/** "Create a template": a blank A4 page, named and previewed in a language. */
+export const createDesignTemplateSchema = z.object({
   name: templateNameSchema,
-  description: templateDescriptionSchema,
+  locale: cvLocaleSchema,
 });
-export type NewTemplateDetails = z.infer<typeof newTemplateDetailsSchema>;
 
 /**
- * Saving a CV as a template: either a new template, or the setup of an
- * existing one replaced (its name and description stay).
+ * Autosave target of the designer. The draft also carries the template's
+ * (unused) composition, which is ignored: a design never changes it.
  */
-export const saveCvAsTemplateSchema = z.discriminatedUnion("mode", [
-  z.object({ mode: z.literal("new"), cvId: z.uuid(), ...newTemplateDetailsSchema.shape }),
-  z.object({ mode: z.literal("replace"), cvId: z.uuid(), templateId: z.uuid() }),
-]);
-export type SaveCvAsTemplateValues = z.infer<typeof saveCvAsTemplateSchema>;
-
-export const saveTemplateSchema = z.object({
+export const saveTemplateDesignSchema = z.object({
   id: z.uuid(),
   expectedRevision: z.int().min(1),
   name: templateNameSchema,
-  description: templateDescriptionSchema,
   locale: cvLocaleSchema,
-  definition: definitionSchema,
+  design: designSchema,
 });
-export type SaveTemplateValues = z.infer<typeof saveTemplateSchema>;
+export type SaveTemplateDesignValues = z.infer<typeof saveTemplateDesignSchema>;

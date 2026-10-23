@@ -9,7 +9,10 @@ const unique = () => Math.random().toString(36).slice(2, 8);
 const CV_URL = /\/en\/dashboard\/cvs\/[0-9a-f-]{36}$/;
 const TEMPLATE_URL = /\/en\/dashboard\/templates\/[0-9a-f-]{36}$/;
 
-const preview = (page: Page) => page.locator("article[data-visual-template]");
+// Visible only: Next keeps pages navigated away from mounted but hidden, and the
+// Templates gallery draws each template's first page with the same renderer.
+const preview = (page: Page) =>
+  page.locator("article[data-visual-template]").filter({ visible: true });
 const outline = (page: Page) => page.getByRole("navigation", { name: "CV structure" });
 const sectionCount = (page: Page, kind: string) =>
   preview(page).locator(`[data-section-kind="${kind}"]`);
@@ -159,6 +162,41 @@ test.describe("saved templates", () => {
     );
   });
 
+  test("creates a template from Classic on the Templates page and shows its first page", async ({
+    page,
+  }) => {
+    const template = `Created ${unique()}`;
+    await page.goto("/en/dashboard/templates");
+    // The built-in Classic is always offered, ready to use.
+    const included = page.getByRole("region", { name: "Included" });
+    await expect(included.getByRole("link", { name: "Use template" })).toHaveAttribute(
+      "href",
+      "/en/dashboard/cvs/new",
+    );
+    await expect(included.locator("article[data-visual-template]")).toHaveCount(1);
+
+    await page.getByRole("link", { name: "Create a template" }).first().click();
+    await expect(page).toHaveURL(/\/en\/dashboard\/templates\/new$/);
+    await expect(page.getByRole("radio", { name: /^Classic/ })).toBeChecked();
+    await page.getByRole("textbox", { name: "Template name" }).fill(template);
+    await page.getByRole("button", { name: "Create and edit" }).click();
+
+    // It opens in the editor, with every section of the career data.
+    await expect(page).toHaveURL(TEMPLATE_URL);
+    await expect(page.getByRole("textbox", { name: "Template name" })).toHaveValue(template);
+    await expect(sectionCount(page, "experience")).toHaveCount(1);
+
+    // The gallery shows it with a picture of its first page, which is not interactive.
+    await page.goto("/en/dashboard/templates");
+    const card = page
+      .getByRole("region", { name: "Your templates" })
+      .getByRole("listitem")
+      .filter({ hasText: template });
+    await expect(card.locator("[inert] article[data-visual-template]")).toHaveCount(1);
+    await card.getByRole("link", { name: new RegExp(template) }).click();
+    await expect(page).toHaveURL(TEMPLATE_URL);
+  });
+
   test("another owner can neither open nor use the template", async ({ page, browser }) => {
     const template = `Template ${unique()}`;
     await createCv(page, `Private ${unique()}`);
@@ -203,6 +241,7 @@ test.describe("saved templates", () => {
         await expect(page).toHaveTitle(new RegExp(template));
       },
       async () => page.goto("/fr/dashboard/cvs/new"),
+      async () => page.goto("/fr/dashboard/templates/new"),
     ]) {
       await check();
       const results = await new AxeBuilder({ page })

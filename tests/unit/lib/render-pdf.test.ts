@@ -1,6 +1,11 @@
 import type { LaunchOptions } from "playwright-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { describePdfFailure, PdfRenderError, renderPdf } from "@/lib/pdf/render-pdf";
+import {
+  describePdfFailure,
+  PdfLayoutError,
+  PdfRenderError,
+  renderPdf,
+} from "@/lib/pdf/render-pdf";
 
 const launch = vi.hoisted(() => vi.fn<(options: LaunchOptions) => Promise<unknown>>());
 vi.mock("playwright-core", () => ({ chromium: { launch } }));
@@ -19,6 +24,8 @@ type FakeOptions = {
   finalUrl?: string;
   showsError?: boolean;
   ready?: boolean;
+  /** What the print page reports in data-layout-issues; null when the design fits. */
+  layoutIssues?: string | null;
 };
 
 /** A stand-in browser whose print page answers as described. */
@@ -28,6 +35,7 @@ function fakeBrowser({
   finalUrl = PRINT_URL,
   showsError = false,
   ready = true,
+  layoutIssues = null,
 }: FakeOptions = {}) {
   const page = {
     goto: vi.fn(async (_url: string, _options: { timeout: number }) => ({
@@ -41,6 +49,7 @@ function fakeBrowser({
       if (!ready) throw new Error("page.waitForSelector: Timeout 45000ms exceeded.");
       return null;
     }),
+    getAttribute: vi.fn(async (_selector: string, _name: string) => layoutIssues),
     emulateMedia: vi.fn(async () => undefined),
     pdf: vi.fn(async () => Buffer.from("%PDF-1.4")),
   };
@@ -264,6 +273,19 @@ describe("renderPdf failures name the step that failed", () => {
     expect((await failure({ ready: false })).message).toMatch(
       /^The print page was not ready after \d+s \(\/en\/print\/:id\)$/,
     );
+  });
+
+  it("refuses to print a design the print page found cut off or overlapping", async () => {
+    const fake = fakeBrowser({ layoutIssues: "2" });
+    launch.mockResolvedValueOnce(fake.browser);
+
+    const error = await renderPdf({ url: PRINT_URL, cookies: [] }).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(PdfLayoutError);
+    expect(error).toMatchObject({ count: 2 });
+    expect(fake.page.getAttribute).toHaveBeenCalledWith("html", "data-layout-issues");
+    expect(fake.page.pdf).not.toHaveBeenCalled();
+    expect(fake.browser.close).toHaveBeenCalledTimes(1);
   });
 
   it("print: the page could not be printed", async () => {

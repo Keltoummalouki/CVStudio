@@ -7,7 +7,7 @@ import { createExportLimiter } from "@/features/cv-export/rate-limit";
 import { loadExportableCv } from "@/features/cv-export/server/load-export";
 import { getOwnerContext } from "@/lib/auth/session";
 import { PRINT_PATH } from "@/lib/auth/routes";
-import { describePdfFailure, renderPdf } from "@/lib/pdf/render-pdf";
+import { PdfLayoutError, describePdfFailure, renderPdf } from "@/lib/pdf/render-pdf";
 import { sessionCookies } from "@/lib/supabase/session-cookies";
 
 // Node.js runtime (the default): the PDF engine drives a real browser.
@@ -78,6 +78,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (error) {
+    // The design cuts text off: the owner fixes it in the CV, nothing is broken.
+    if (error instanceof PdfLayoutError) {
+      return failure("layout_issues", 409, { count: error.count });
+    }
     // One structured line: the step that failed and the original error with
     // its stack, redacted. Never cookie values, tokens or CV content.
     console.error(

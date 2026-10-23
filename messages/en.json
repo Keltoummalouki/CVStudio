@@ -457,10 +457,9 @@
         "classicHint": "Your reference layout with every active entry of your career data.",
         "builtIn": "Included",
         "classicNote": "The CV starts with all your current career data, in the reference order. Then keep what fits this application.",
-        "makeYourOwn": "Your own templates will appear here. To save one, open a CV and choose More actions → Save as template.",
-        "savedHint": "A saved template.",
-        "savedLanguage": "Saved in {language}",
-        "savedNote": "The CV copies the template’s sections, order and wording, filled with your latest career data. Entries added since the template was saved aren’t included: add them in the CV."
+        "makeYourOwn": "Templates you design appear here. Create one in Templates.",
+        "savedHint": "A template you designed.",
+        "savedNote": "The CV uses this design, filled with all your current career data. Then keep what fits this application."
       },
       "forJob": "For the job post “{title}”: named after it and in its language. Its page then shows how well this CV covers it."
     },
@@ -729,8 +728,7 @@
       "renameHint": "Click to rename this CV",
       "downloadLabel": "Download PDF",
       "preparing": "Preparing…",
-      "exportBlocked": "{count, plural, one {Translate # text} other {Translate # texts}} before printing or exporting.",
-      "saveAsTemplate": "Save as template…"
+      "exportBlocked": "{count, plural, one {Translate # text} other {Translate # texts}} before printing or exporting."
     },
     "conflict": {
       "message": "This CV was changed in another tab or device. Your latest edits are not saved.",
@@ -751,6 +749,11 @@
     },
     "workspace": {
       "headerHint": "Make your first impression. Choose the profile details to show on this CV."
+    },
+    "layout": {
+      "title": "{count, plural, one {The design doesn’t fit this CV’s content in # place} other {The design doesn’t fit this CV’s content in # places}}",
+      "hint": "Nothing is printed or exported until it fits: hide or shorten entries in this CV, or adjust the design.",
+      "exportBlocked": "{count, plural, one {Fix # layout problem} other {Fix # layout problems}} before exporting: text would be cut off or overlap."
     }
   },
   "cvExport": {
@@ -767,21 +770,25 @@
       "not_found": "This CV no longer exists.",
       "missing_translations": "{count, plural, one {Translate # text} other {Translate # texts}} before exporting this CV.",
       "rate_limited": "Several PDFs were just created. Wait a minute and try again.",
-      "unavailable": "The PDF couldn’t be created. Try again, or use Print and “Save as PDF”."
+      "unavailable": "The PDF couldn’t be created. Try again, or use Print and “Save as PDF”.",
+      "layout_issues": "{count, plural, one {Fix # layout problem} other {Fix # layout problems}} in this CV’s design before exporting."
     },
     "blocked": {
       "title": "This CV can’t be printed yet",
       "description": "{count, plural, one {# text is} other {# texts are}} not written in {language} yet. Translate them in your career data, reword them for this CV, or hide them.",
       "action": "Open in the editor"
+    },
+    "layout": {
+      "description": "{count, plural, one {This CV’s design cuts off or overlaps text in # place} other {This CV’s design cuts off or overlaps text in # places}}, so it isn’t printed.",
+      "action": "Open in the editor"
     }
   },
   "templates": {
     "title": "Templates",
-    "description": "Reusable CV setups: sections, order, chosen entries and wording. Using one creates a new CV; it never changes existing ones.",
+    "description": "Your CV designs: place your name, sections, text and shapes on the page. Using one starts a new CV and never changes existing ones.",
     "empty": {
-      "title": "No templates yet",
-      "description": "Open a CV and choose More actions → Save as template. A template starts new CVs with the same sections, order and wording, filled with your latest career data.",
-      "goToCvs": "Go to CVs"
+      "title": "No templates of your own yet",
+      "description": "Create one: you start from a blank A4 page and design it your way."
     },
     "concepts": {
       "title": "How these fit together",
@@ -791,7 +798,7 @@
       },
       "template": {
         "term": "Template",
-        "definition": "A saved copy of a CV’s setup, used to start new CVs. It holds no career data."
+        "definition": "A design: where your name, sections and text sit on the page and how they look. It holds no career data."
       },
       "style": {
         "term": "Visual style",
@@ -799,20 +806,13 @@
       }
     },
     "visualStyle": {
-      "title": "Visual style",
       "name": "Classic",
       "description": "A4 portrait, Poppins, fine rules, two-column skills and right-aligned dates, reproduced from your reference CV.",
       "included": "Included"
     },
     "library": {
       "title": "Your templates",
-      "howToAdd": "To add one, open a CV and choose More actions → Save as template."
-    },
-    "status": {
-      "unreadable": "Layout unreadable",
-      "toTranslate": "{count, plural, one {# text to translate} other {# texts to translate}}",
-      "warnings": "{count, plural, one {# warning} other {# warnings}}",
-      "ready": "Ready to use"
+      "howToAdd": "Start from a blank A4 page, then drag, resize and style each element."
     },
     "updated": "Updated {date}",
     "usedBy": "{count, plural, =0 {No CV made from it yet} one {Used for # CV} other {Used for # CVs}}",
@@ -828,64 +828,10 @@
     "actionFailed": "That didn’t work. Nothing was changed.",
     "deleteTitle": "Delete “{name}”?",
     "deleteDescription": "{count, plural, =0 {The template disappears from your lists. Your CVs and career data are not affected.} one {The template disappears from your lists. The CV made from it stays exactly as it is.} other {The template disappears from your lists. The # CVs made from it stay exactly as they are.}}",
-    "saveDialog": {
-      "title": "Save as template",
-      "description": "A template keeps this CV’s sections, order, chosen entries and wording, to start new CVs from. It stores no career data: new CVs use your latest data.",
-      "modeLabel": "Save as",
-      "modes": {
-        "new": {
-          "title": "New template",
-          "description": "Keep this setup under a new name."
-        },
-        "replace": {
-          "title": "Replace a template",
-          "description": "Update an existing template with this setup."
-        }
-      },
-      "name": "Template name",
-      "descriptionLabel": "Description",
-      "descriptionHint": "Only you see it. Note when to use this template.",
-      "replaceLabel": "Template to replace",
-      "replaceWarning": "“{name}” will get this CV’s sections, order, wording and language. Its name and description stay. CVs already made from it don’t change.",
-      "submitNew": "Save template",
-      "submitReplace": "Replace template",
-      "cancel": "Cancel",
-      "created": "Template “{name}” saved",
-      "replaced": "Template “{name}” updated",
-      "openTemplate": "Open",
-      "errors": {
-        "invalid_input": "Check the name and description, then try again.",
-        "stale": "Something changed in the meantime. Try again.",
-        "not_found": "That CV or template no longer exists.",
-        "unauthorized": "Your session has expired. Sign in again to continue.",
-        "unavailable": "The template couldn’t be saved. Check your connection and try again."
-      }
-    },
-    "editor": {
-      "back": "Back to templates",
-      "name": "Template name",
-      "renameHint": "Click to rename this template",
-      "intro": "You’re editing a template, shown with your current career data. Changes apply to CVs you create from it later, never to CVs that already exist.",
-      "descriptionLabel": "Description",
-      "descriptionHint": "Only you see it. Note when to use this template.",
-      "use": "New CV from template",
-      "duplicate": "Duplicate",
-      "delete": "Delete template",
-      "copyName": "Copy of {name}",
-      "duplicated": "Duplicated. You’re now editing the copy.",
-      "deleted": "“{name}” deleted",
-      "undo": "Undo",
-      "actionFailed": "That didn’t work. Nothing was changed.",
-      "deleteTitle": "Delete “{name}”?",
-      "deleteDescription": "The template disappears from your lists. CVs made from it stay exactly as they are.",
-      "conflict": "This template was changed in another tab or device. Your latest edits are not saved.",
-      "saveErrors": {
-        "invalid_input": "Some content is too long or invalid, so it couldn’t be saved.",
-        "stale": "This template was changed elsewhere.",
-        "not_found": "This template no longer exists. It may have been deleted in another tab.",
-        "unauthorized": "Your session has expired. Sign in again in a new tab, then retry.",
-        "unavailable": "Couldn’t save. Your edits are kept here; check your connection and retry."
-      }
+    "create": "Create a template",
+    "included": {
+      "title": "Included",
+      "description": "Ready to use, filled with your current career data."
     }
   },
   "jobs": {
@@ -1351,6 +1297,147 @@
         "first": "A section title and subsections that organize your content.",
         "second": "Paragraphs, bullet points or short label-and-text entries."
       }
+    }
+  },
+  "designer": {
+    "untitled": "Untitled template",
+    "back": "Templates",
+    "name": "Template name",
+    "renameHint": "Only you see it. Name it after its look or the kind of job.",
+    "create": "Create a template",
+    "creating": "Creating…",
+    "createFailed": "The template couldn’t be created. Check your connection and try again.",
+    "more": "More actions",
+    "use": "Use for a new CV",
+    "duplicate": "Duplicate",
+    "delete": "Delete template",
+    "copyName": "Copy of {name}",
+    "duplicated": "Template duplicated",
+    "deleted": "“{name}” deleted",
+    "undoDelete": "Undo",
+    "actionFailed": "That didn’t work. Nothing was changed.",
+    "deleteTitle": "Delete “{name}”?",
+    "deleteDescription": "The template disappears from your lists. CVs made from it keep their own copy of the design.",
+    "conflict": "This template was changed in another tab or on another device.",
+    "saveErrors": {
+      "invalid_input": "This design couldn’t be saved: something in it isn’t valid. Undo the last change.",
+      "stale": "Something changed in the meantime.",
+      "not_found": "This template no longer exists.",
+      "unauthorized": "Your session has expired. Sign in again to keep your changes.",
+      "unavailable": "Couldn’t save. Check your connection; your changes are kept here."
+    },
+    "palette": {
+      "title": "Elements",
+      "hint": "Click an element to add it to the page, then drag it where you want it.",
+      "profile": "Profile",
+      "sections": "Career sections",
+      "basics": "Basics",
+      "add": "Add {name}",
+      "placed": "On the page"
+    },
+    "elements": {
+      "name": "Name",
+      "title": "Professional title",
+      "contacts": "Contact details",
+      "links": "Links",
+      "text": "Text",
+      "photo": "Photo",
+      "line": "Line",
+      "shape": "Shape"
+    },
+    "defaultText": "Your text",
+    "canvas": {
+      "label": "Design canvas",
+      "page": "Page {number, number}",
+      "frame": "{name}, at {x, number} by {y, number} mm, {w, number} by {h, number} mm",
+      "keys": "Arrow keys move it, Shift for 5 mm. Ctrl or Command with the arrows resizes it. Delete removes it.",
+      "moved": "{name} moved to {x, number} by {y, number} mm",
+      "resized": "{name} resized to {w, number} by {h, number} mm",
+      "added": "{name} added",
+      "removed": "{name} removed",
+      "empty": "{name}: nothing to show yet",
+      "emptyPage": "Add elements from the list: your name, career sections, text, lines and shapes."
+    },
+    "properties": {
+      "title": "Properties",
+      "position": "Position and size",
+      "x": "X",
+      "y": "Y",
+      "width": "Width",
+      "height": "Height",
+      "minHeight": "Minimum height",
+      "mm": "mm",
+      "pt": "pt",
+      "autoHeight": "Grow to fit the text",
+      "autoHeightHint": "The box grows downward instead of cutting the text off.",
+      "page": "Page",
+      "content": "Content",
+      "showTitle": "Show the heading",
+      "rule": "Line under the heading",
+      "columns": "Two columns",
+      "inline": "On one line",
+      "textEn": "Text in English",
+      "textFr": "Text in French",
+      "shape": "Shape",
+      "shapes": {
+        "circle": "Circle",
+        "rounded": "Rounded",
+        "square": "Square"
+      },
+      "text": "Text",
+      "font": "Font",
+      "fonts": {
+        "poppins": "Poppins",
+        "inter": "Inter",
+        "lora": "Lora (serif)"
+      },
+      "size": "Size",
+      "bold": "Bold",
+      "align": "Alignment",
+      "aligns": {
+        "left": "Left",
+        "center": "Centre",
+        "right": "Right"
+      },
+      "lineHeight": "Line height",
+      "uppercase": "Capital letters",
+      "color": "Text colour",
+      "accent": "Accent colour",
+      "lineColor": "Line colour",
+      "lineWidth": "Thickness",
+      "box": "Box",
+      "background": "Background",
+      "noBackground": "No background",
+      "border": "Border",
+      "borderColor": "Border colour",
+      "radius": "Corner radius",
+      "padding": "Inner margin",
+      "duplicate": "Duplicate",
+      "remove": "Remove",
+      "deselect": "Done"
+    },
+    "page": {
+      "title": "Page",
+      "background": "Page background",
+      "pages": "Pages",
+      "addPage": "Add a page",
+      "removePage": "Remove the last page",
+      "removePageBlocked": "Move or remove the elements of the last page first.",
+      "readingOrder": "Reading order",
+      "readingOrderHint": "The order applicant tracking systems and copy-paste read your CV in. Shapes, lines and the photo are not read.",
+      "sort": "Sort from top to bottom",
+      "up": "Read {name} earlier",
+      "down": "Read {name} later",
+      "noText": "No text on the page yet."
+    },
+    "issues": {
+      "title": "To fix before export",
+      "none": "Nothing to fix: every text fits on the page.",
+      "clipped": "{name}: the text doesn’t fit its box.",
+      "offPage": "{name}: runs past the bottom of the page.",
+      "overlap": "{name} overlaps {other}.",
+      "count": "{count, plural, one {# thing to fix} other {# things to fix}}",
+      "select": "Select {name}"
     }
   }
 }

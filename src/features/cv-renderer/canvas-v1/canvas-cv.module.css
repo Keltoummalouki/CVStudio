@@ -1,0 +1,254 @@
+/*
+ * canvas-v1: free-form designs. Pages are fixed A4 sheets; each element is a
+ * box placed in millimetres. Only the boxes are positioned: everything inside
+ * a box stays in normal flow, and the boxes come in reading order, so the
+ * PDF's text order is the design's reading order (CLAUDE.md §12).
+ * Sizes inside a box are relative to its font size (em), set per element.
+ */
+
+.document {
+  display: flex;
+  flex-direction: column;
+  gap: 8mm;
+  width: 210mm;
+}
+
+.page {
+  box-sizing: border-box;
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  background: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* On paper, one sheet per page with nothing in between. */
+@media print {
+  .document {
+    gap: 0;
+  }
+
+  .page {
+    break-after: page;
+  }
+
+  .page:last-child {
+    break-after: auto;
+  }
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Only the box is positioned; its content flows. */
+.element {
+  position: absolute;
+  overflow-wrap: anywhere;
+}
+
+/* A fixed box clips what does not fit; the designer reports it and export stops. */
+.fixed {
+  overflow: hidden;
+}
+
+.strong {
+  font-weight: 700;
+}
+
+.missing {
+  text-decoration: underline wavy #d14b2a;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.placeholder {
+  display: flex;
+  height: 100%;
+  min-height: 6mm;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #9aa1ab;
+  border-radius: 1mm;
+  padding: 1mm;
+  color: #6b7280;
+  font-family: system-ui, sans-serif;
+  font-size: 8pt;
+  font-weight: 400;
+  text-align: center;
+  text-transform: none;
+}
+
+/* Decorations ----------------------------------------------------------- */
+
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photoPlaceholder {
+  width: 100%;
+  height: 100%;
+  background: #e5e7eb;
+}
+
+.line {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+}
+
+.line::before {
+  content: "";
+  flex: 1;
+  border-top: var(--line-width) solid var(--accent);
+}
+
+.lineVertical {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.lineVertical::before {
+  flex: none;
+  align-self: center;
+  height: 100%;
+  border-top: 0;
+  border-left: var(--line-width) solid var(--accent);
+}
+
+/* Text ------------------------------------------------------------------ */
+
+.upper {
+  text-transform: uppercase;
+}
+
+.contacts p + p {
+  margin-top: 0.15em;
+}
+
+.separator {
+  padding: 0 0.45em;
+}
+
+.heading {
+  margin-bottom: 0.45em;
+  padding-bottom: 0.15em;
+  border-bottom: var(--heading-rule, 0) solid var(--accent);
+  color: var(--accent);
+  font-size: 1.15em;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.headingUpper {
+  text-transform: uppercase;
+}
+
+.entry + .entry {
+  margin-top: 0.7em;
+}
+
+.entryHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: 0.8em;
+  break-inside: avoid;
+}
+
+.entryTitle {
+  font-weight: 700;
+}
+
+.entryTitleRegular {
+  font-weight: 400;
+}
+
+.date {
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.links {
+  font-size: 0.9em;
+}
+
+.paragraph {
+  margin-top: 0.2em;
+}
+
+.bullets {
+  margin-top: 0.2em;
+  list-style: none;
+}
+
+/*
+ * The dot takes the first grid column, the text the second. Never position
+ * the dot: positioned boxes are painted last, and the PDF keeps paint order
+ * as its text order.
+ */
+.bullet {
+  display: grid;
+  grid-template-columns: 1.1em minmax(0, 1fr);
+  align-items: start;
+  break-inside: avoid;
+}
+
+.bullet::before {
+  content: "";
+  width: 0.32em;
+  height: 0.32em;
+  margin: 0.55em 0 0 0.3em;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.techLabel {
+  margin-top: 0.3em;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+.techList {
+  font-size: 0.9em;
+}
+
+/* Two columns read top to bottom: the left column first, then the right. */
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.2em;
+}
+
+.column > * + * {
+  margin-top: 0.3em;
+}
+
+.list > * + * {
+  margin-top: 0.2em;
+}
+
+.subsection + .subsection {
+  margin-top: 0.6em;
+}
+
+.subsectionTitle {
+  font-weight: 700;
+}

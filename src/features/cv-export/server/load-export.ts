@@ -1,5 +1,6 @@
 import "server-only";
-import { definitionSchema } from "@/features/cv-builder/definition";
+import { definitionSchema, type CvDefinition } from "@/features/cv-builder/definition";
+import { designSchema, type Design } from "@/features/cv-design/design";
 import type { CvLabels } from "@/features/cv-builder/labels";
 import {
   isBlockingIssue,
@@ -17,6 +18,10 @@ export type ExportableCv = {
   id: string;
   name: string;
   locale: Locale;
+  /** The composition `cv` was resolved from: binds sections to a design's elements. */
+  definition: CvDefinition;
+  /** The CV's own free-form design; null when Classic draws it. */
+  design: Design | null;
   cv: ResolvedCv;
   labels: CvLabels;
   issues: CvIssue[];
@@ -41,7 +46,7 @@ export async function loadExportableCv(
   const [documentResult, profileResult, master, labels] = await Promise.all([
     supabase
       .from("cv_documents")
-      .select("id, name, locale, definition")
+      .select("id, name, locale, definition, design")
       .eq("owner_id", owner.id)
       .eq("id", id)
       .is("deleted_at", null)
@@ -57,6 +62,10 @@ export async function loadExportableCv(
   const definition = definitionSchema.safeParse(row.definition);
   if (!definition.success) {
     throw new DataAccessError("read CV definition", { cause: definition.error });
+  }
+  const design = row.design === null ? null : designSchema.safeParse(row.design);
+  if (design && !design.success) {
+    throw new DataAccessError("read CV design", { cause: design.error });
   }
 
   const { cv, issues } = resolveCv(definition.data, master, row.locale, labels[row.locale]);
@@ -74,6 +83,8 @@ export async function loadExportableCv(
     id: row.id,
     name: row.name,
     locale: row.locale,
+    definition: definition.data,
+    design: design ? design.data : null,
     cv,
     labels: labels[row.locale],
     issues,

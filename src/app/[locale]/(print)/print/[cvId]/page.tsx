@@ -8,6 +8,8 @@ import { FitSheet } from "@/features/cv-export/components/fit-sheet";
 import { PrintReady } from "@/features/cv-export/components/print-ready";
 import { PrintToolbar } from "@/features/cv-export/components/print-toolbar";
 import { loadExportableCv } from "@/features/cv-export/server/load-export";
+import { CanvasCv } from "@/features/cv-renderer/canvas-v1/canvas-cv";
+import { canvasPrintPageCss } from "@/features/cv-renderer/canvas-v1/layout";
 import { ClassicCv } from "@/features/cv-renderer/classic-reference-v1/classic-cv";
 import { printPageCss } from "@/features/cv-renderer/classic-reference-v1/layout";
 import { requireOwner } from "@/lib/auth/session";
@@ -62,23 +64,34 @@ export default async function PrintPage({ params, searchParams }: Props) {
     );
   }
 
+  const { design } = exportable;
   return (
     <>
       <style href="cvstudio-print-page" precedence="default">
-        {printPageCss()}
+        {design ? canvasPrintPageCss() : printPageCss()}
       </style>
       <PrintToolbar cvId={exportable.id} name={exportable.name} />
       <main className="bg-ink-150 px-4 py-6 print:bg-white print:p-0">
         <FitSheet>
-          <ClassicCv
-            cv={exportable.cv}
-            labels={exportable.labels}
-            photoUrl={exportable.photoUrl}
-            className="shadow-[0_1px_2px_rgb(0_0_0/0.06),0_8px_24px_-8px_rgb(0_0_0/0.18)] print:shadow-none"
-          />
+          {design ? (
+            <CanvasCv
+              design={design}
+              definition={exportable.definition}
+              cv={exportable.cv}
+              labels={exportable.labels}
+              photoUrl={exportable.photoUrl}
+            />
+          ) : (
+            <ClassicCv
+              cv={exportable.cv}
+              labels={exportable.labels}
+              photoUrl={exportable.photoUrl}
+              className="shadow-[0_1px_2px_rgb(0_0_0/0.06),0_8px_24px_-8px_rgb(0_0_0/0.18)] print:shadow-none"
+            />
+          )}
         </FitSheet>
       </main>
-      <PrintReady autoPrint={query.print === "1"} />
+      <PrintReady autoPrint={query.print === "1"} design={design} cvId={exportable.id} />
     </>
   );
 }

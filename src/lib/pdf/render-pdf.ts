@@ -1,6 +1,10 @@
 import "server-only";
 import type { Browser, Page, Response } from "playwright-core";
-import { PRINT_READY_ATTRIBUTE, ROUTE_ERROR_ATTRIBUTE } from "@/lib/page-markers";
+import {
+  LAYOUT_ISSUES_ATTRIBUTE,
+  PRINT_READY_ATTRIBUTE,
+  ROUTE_ERROR_ATTRIBUTE,
+} from "@/lib/page-markers";
 import { redact } from "./redact";
 
 /** The steps of an export, in order, as named in logs. */
@@ -21,6 +25,21 @@ export class PdfRenderError extends Error {
   constructor(stage: PdfStage, message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.stage = stage;
+  }
+}
+
+/**
+ * The print page measured text its design cuts off, pushes off the page or
+ * overlaps: printing would damage the CV, so nothing is printed. The owner
+ * fixes it in the CV; it is not a failure of the engine.
+ */
+export class PdfLayoutError extends Error {
+  override name = "PdfLayoutError";
+  readonly count: number;
+
+  constructor(count: number) {
+    super(`The CV's design does not fit its content (${count} layout issues)`);
+    this.count = count;
   }
 }
 
@@ -182,6 +201,10 @@ export async function renderPdf({
       const seconds = Math.round((Date.now() - started) / 1000);
       throw new PdfRenderError("ready", await describeStall(page, seconds), { cause: error });
     }
+    const layoutIssues = await step("ready", "The print page could not be checked", () =>
+      page.getAttribute("html", LAYOUT_ISSUES_ATTRIBUTE),
+    );
+    if (layoutIssues !== null) throw new PdfLayoutError(Number(layoutIssues) || 1);
 
     const pdf = await step("print", "The page could not be printed to PDF", async () => {
       await page.emulateMedia({ media: "print" });

@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportableCv } from "@/features/cv-export/server/load-export";
 import type * as RenderPdf from "@/lib/pdf/render-pdf";
-import { PdfRenderError } from "@/lib/pdf/render-pdf";
+import { PdfLayoutError, PdfRenderError } from "@/lib/pdf/render-pdf";
 import { OWNER_ID } from "../../utils/fake-supabase";
 
 const mocks = vi.hoisted(() => ({
@@ -164,6 +164,17 @@ describe("GET /api/cvs/[cvId]/pdf", () => {
     expect((await first).status).toBe(200);
     // The slot is released once the first export is done.
     expect((await download()).status).toBe(200);
+  });
+
+  it("refuses a CV whose design cuts text off, without logging a failure", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.renderPdf.mockRejectedValueOnce(new PdfLayoutError(2));
+
+    const response = await download();
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "layout_issues", count: 2 });
+    expect(log).not.toHaveBeenCalled();
   });
 
   it("logs the failing step, where the print page was looked for, and the cookies sent", async () => {

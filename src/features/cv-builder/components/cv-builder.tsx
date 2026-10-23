@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { CopyIcon, DownloadIcon, LayersIcon, PrinterIcon, Trash2Icon } from "lucide-react";
+import { CopyIcon, DownloadIcon, PrinterIcon, Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import type { LayoutIssue } from "@/features/cv-design/layout";
 import { useCvExport } from "@/features/cv-export/components/use-cv-export";
 import {
   deleteCv,
@@ -17,7 +18,6 @@ import {
   saveCv,
 } from "@/features/cv-documents/server/actions";
 import type { CvDocument } from "@/features/cv-documents/server/queries";
-import { SaveAsTemplateDialog } from "@/features/cv-templates/components/save-as-template-dialog";
 import { useRouter } from "@/lib/i18n/navigation";
 import type { CvLabelSet } from "../labels";
 import type { MasterData } from "../master-data";
@@ -49,17 +49,26 @@ export function CvBuilder({ document, master, labels, photoUrl }: CvBuilderProps
 
   const [issuesOpen, setIssuesOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [templateOpen, setTemplateOpen] = useState(false);
 
+  const [layoutIssues, setLayoutIssues] = useState<LayoutIssue[]>([]);
   const exporter = useCvExport();
   const blockingCount = issues.filter(isBlockingIssue).length;
 
-  /** Export only what is saved, and only when every shown text exists in the CV language. */
+  /**
+   * Export only what is saved, when every shown text exists in the CV language
+   * and, with a design, fits it: nothing cut off, off the page or overlapping.
+   */
   const canExport = () => {
-    if (blockingCount === 0) return true;
-    setIssuesOpen(true);
-    toast.error(t("toolbar.exportBlocked", { count: blockingCount }));
-    return false;
+    if (blockingCount > 0) {
+      setIssuesOpen(true);
+      toast.error(t("toolbar.exportBlocked", { count: blockingCount }));
+      return false;
+    }
+    if (document.design && layoutIssues.length > 0) {
+      toast.error(t("layout.exportBlocked", { count: layoutIssues.length }));
+      return false;
+    }
+    return true;
   };
   const saveFirst = async () => {
     if (await autosave.flush()) return true;
@@ -122,6 +131,9 @@ export function CvBuilder({ document, master, labels, photoUrl }: CvBuilderProps
         }}
         issuesOpen={issuesOpen}
         onIssuesOpenChange={setIssuesOpen}
+        design={document.design}
+        layoutIssues={layoutIssues}
+        onLayoutIssues={setLayoutIssues}
         actions={
           <>
             <Button type="button" variant="outline" size="sm" onClick={print}>
@@ -155,10 +167,6 @@ export function CvBuilder({ document, master, labels, photoUrl }: CvBuilderProps
               {t("toolbar.downloadLabel")}
             </DropdownMenuItem>
             <DropdownMenuSeparator className="md:hidden" />
-            <DropdownMenuItem onSelect={() => setTemplateOpen(true)}>
-              <LayersIcon aria-hidden="true" />
-              {t("toolbar.saveAsTemplate")}
-            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => void duplicate()}>
               <CopyIcon aria-hidden="true" />
               {t("toolbar.duplicate")}
@@ -180,13 +188,6 @@ export function CvBuilder({ document, master, labels, photoUrl }: CvBuilderProps
         confirmLabel={t("toolbar.delete")}
         tone="destructive"
         onConfirm={remove}
-      />
-      <SaveAsTemplateDialog
-        open={templateOpen}
-        onOpenChange={setTemplateOpen}
-        cvId={document.id}
-        cvName={draft.name}
-        saveCvFirst={saveFirst}
       />
     </>
   );

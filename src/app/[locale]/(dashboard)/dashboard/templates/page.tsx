@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { ArrowRightIcon, FileTextIcon, LayersIcon } from "lucide-react";
-import { getTranslations } from "next-intl/server";
-import { A4SheetIllustration } from "@/components/feedback/a4-sheet-illustration";
+import { FilePlus2Icon, LayersIcon } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PageContainer, PageHeader, Panel, PanelHeader } from "@/components/layout/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,8 +12,16 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { TemplateList } from "@/features/cv-templates/components/template-list";
-import { listTemplates } from "@/features/cv-templates/server/queries";
+import { NEW_CV_HREF } from "@/config/navigation";
+import { getCvLabels } from "@/features/cv-documents/server/labels";
+import { getPortraitUrl } from "@/features/cv-documents/server/queries";
+import { CanvasCv } from "@/features/cv-renderer/canvas-v1/canvas-cv";
+import { ClassicCv } from "@/features/cv-renderer/classic-reference-v1/classic-cv";
+import { PageThumbnail } from "@/features/cv-renderer/page-thumbnail";
+import { CreateTemplateButton } from "@/features/cv-templates/components/create-template-button";
+import { TemplateCover, TemplateList } from "@/features/cv-templates/components/template-list";
+import { getTemplateGallery } from "@/features/cv-templates/server/queries";
+import { isLocale } from "@/lib/i18n/config";
 import { Link } from "@/lib/i18n/navigation";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,87 +32,118 @@ export async function generateMetadata(): Promise<Metadata> {
 const CONCEPTS = ["cv", "template", "style"] as const;
 
 export default async function TemplatesPage() {
-  const [t, templates] = await Promise.all([getTranslations("templates"), listTemplates()]);
+  const requested = await getLocale();
+  const locale = isLocale(requested) ? requested : "en";
+  const [t, gallery, labels, photoUrl] = await Promise.all([
+    getTranslations("templates"),
+    getTemplateGallery(locale),
+    getCvLabels(),
+    getPortraitUrl(),
+  ]);
+  const { preview } = gallery;
+  // Pictures are rendered here, filled with the current career data; the
+  // interactive list only gets the summaries.
+  const thumbnails = Object.fromEntries(
+    gallery.templates.map((template) => [
+      template.id,
+      <PageThumbnail key={template.id}>
+        <CanvasCv
+          design={template.design}
+          definition={preview.definition}
+          cv={preview.cv}
+          labels={labels[locale]}
+          photoUrl={photoUrl}
+        />
+      </PageThumbnail>,
+    ]),
+  );
+  const templates = gallery.templates.map(({ design: _design, ...summary }) => summary);
 
   return (
     <PageContainer>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        actions={<CreateTemplateButton />}
+      />
 
-      <Panel aria-labelledby="templates-library-title">
+      <section aria-labelledby="templates-yours" className="flex flex-col gap-4">
+        <div className="space-y-1">
+          <h2 id="templates-yours" className="text-lg font-semibold tracking-[-0.02em]">
+            {t("library.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("library.howToAdd")}</p>
+        </div>
         {templates.length === 0 ? (
-          <Empty className="min-h-80 py-12">
-            <EmptyMedia variant="icon">
-              <LayersIcon />
-            </EmptyMedia>
-            <EmptyHeader>
-              <EmptyTitle as="h2" id="templates-library-title">
-                {t("empty.title")}
-              </EmptyTitle>
-              <EmptyDescription>{t("empty.description")}</EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent className="justify-center">
-              <Button asChild variant="default">
-                <Link href="/dashboard/cvs">
-                  <FileTextIcon aria-hidden="true" />
-                  {t("empty.goToCvs")}
-                  <ArrowRightIcon aria-hidden="true" />
-                </Link>
-              </Button>
-            </EmptyContent>
-          </Empty>
+          <Panel>
+            <Empty className="py-12">
+              <EmptyMedia variant="icon">
+                <LayersIcon />
+              </EmptyMedia>
+              <EmptyHeader>
+                <EmptyTitle as="h3">{t("empty.title")}</EmptyTitle>
+                <EmptyDescription>{t("empty.description")}</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent className="justify-center">
+                <CreateTemplateButton variant="default" />
+              </EmptyContent>
+            </Empty>
+          </Panel>
         ) : (
-          <>
-            <PanelHeader
-              titleId="templates-library-title"
-              title={t("library.title")}
-              description={t("library.howToAdd")}
-            />
-            <TemplateList templates={templates} />
-          </>
+          <TemplateList templates={templates} thumbnails={thumbnails} />
         )}
+      </section>
+
+      <section aria-labelledby="templates-included" className="flex flex-col gap-4">
+        <div className="space-y-1">
+          <h2 id="templates-included" className="text-lg font-semibold tracking-[-0.02em]">
+            {t("included.title")}
+          </h2>
+          <p className="text-sm text-muted-foreground">{t("included.description")}</p>
+        </div>
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <li className="group/template flex min-w-0 flex-col overflow-hidden rounded-lg border bg-card">
+            <TemplateCover>
+              <PageThumbnail>
+                <ClassicCv cv={gallery.classic} labels={labels[locale]} photoUrl={photoUrl} />
+              </PageThumbnail>
+            </TemplateCover>
+            <div className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
+              <div className="flex-1 space-y-2">
+                <h3 className="flex flex-wrap items-center gap-2 text-base font-semibold tracking-[-0.015em]">
+                  {t("visualStyle.name")}
+                  <Badge variant="secondary">{t("visualStyle.included")}</Badge>
+                </h3>
+                <p className="text-[0.8125rem] leading-relaxed text-muted-foreground">
+                  {t("visualStyle.description")}
+                </p>
+              </div>
+              <div>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={NEW_CV_HREF}>
+                    <FilePlus2Icon aria-hidden="true" />
+                    {t("use")}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <Panel aria-labelledby="concepts-title">
+        <PanelHeader titleId="concepts-title" title={t("concepts.title")} />
+        <dl className="grid gap-px overflow-hidden rounded-b-lg bg-border sm:grid-cols-3">
+          {CONCEPTS.map((concept) => (
+            <div key={concept} className="space-y-1 bg-card px-5 py-4">
+              <dt className="text-sm font-semibold">{t(`concepts.${concept}.term`)}</dt>
+              <dd className="text-[0.8125rem]/relaxed text-muted-foreground">
+                {t(`concepts.${concept}.definition`)}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </Panel>
-
-      <div className="grid items-start gap-5 lg:grid-cols-12 lg:gap-6">
-        <Panel aria-labelledby="concepts-title" className="lg:col-span-7">
-          <PanelHeader titleId="concepts-title" title={t("concepts.title")} />
-          <dl className="grid gap-px overflow-hidden rounded-b-lg bg-border sm:grid-cols-3 lg:grid-cols-1">
-            {CONCEPTS.map((concept) => (
-              <div key={concept} className="space-y-1 bg-card px-5 py-4">
-                <dt className="text-sm font-semibold">{t(`concepts.${concept}.term`)}</dt>
-                <dd className="text-[0.8125rem]/relaxed text-muted-foreground">
-                  {t(`concepts.${concept}.definition`)}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </Panel>
-
-        <Panel aria-labelledby="visual-style-title" className="lg:col-span-5">
-          <PanelHeader titleId="visual-style-title" title={t("visualStyle.title")} />
-          <div
-            className="flex min-h-52 items-center justify-center gap-7 overflow-hidden bg-ink-100 p-7"
-            aria-hidden="true"
-          >
-            <A4SheetIllustration className="w-28 -rotate-3" />
-            <div className="space-y-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">A4</p>
-              <p>210 × 297 mm</p>
-              <p className="border-t pt-3">EN / FR</p>
-            </div>
-          </div>
-          <div className="p-5">
-            <div className="min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold">{t("visualStyle.name")}</p>
-                <Badge variant="secondary">{t("visualStyle.included")}</Badge>
-              </div>
-              <p className="text-[0.8125rem]/relaxed text-muted-foreground">
-                {t("visualStyle.description")}
-              </p>
-            </div>
-          </div>
-        </Panel>
-      </div>
     </PageContainer>
   );
 }

@@ -9,7 +9,10 @@ test.use({ storageState: BUILDER_STORAGE_STATE });
 const unique = () => Math.random().toString(36).slice(2, 8);
 const CV_URL = /\/en\/dashboard\/cvs\/[0-9a-f-]{36}$/;
 
-const preview = (page: Page) => page.locator("article[data-visual-template]");
+// Visible only: Next keeps pages navigated away from mounted but hidden, and the
+// Templates gallery draws each template's first page with the same renderer.
+const preview = (page: Page) =>
+  page.locator("article[data-visual-template]").filter({ visible: true });
 const outline = (page: Page) => page.getByRole("navigation", { name: "CV structure" });
 const saveStatus = (page: Page) =>
   page

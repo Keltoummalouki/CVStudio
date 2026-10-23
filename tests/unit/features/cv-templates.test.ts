@@ -1,64 +1,39 @@
 import { describe, expect, it } from "vitest";
 import { createCvSchema } from "@/features/cv-documents/schemas";
+import { createBlankDesign } from "@/features/cv-design/design";
 import { newCvFromTemplateHref, templateHref } from "@/features/cv-templates/routes";
 import {
-  TEMPLATE_DESCRIPTION_MAX,
-  saveCvAsTemplateSchema,
-  saveTemplateSchema,
+  createDesignTemplateSchema,
+  saveTemplateDesignSchema,
 } from "@/features/cv-templates/schemas";
-import { createDefaultDefinition } from "@/features/cv-builder/defaults";
-import { buildMasterData } from "../../fixtures/master-data";
 
-const CV_ID = "77777777-7777-4777-8777-777777777777";
 const TEMPLATE_ID = "88888888-8888-4888-8888-888888888888";
 
 describe("template schemas", () => {
-  it("saves a CV as a new template with a trimmed, optional description", () => {
-    const parsed = saveCvAsTemplateSchema.parse({
-      mode: "new",
-      cvId: CV_ID,
-      name: "  Frontend roles ",
-      description: "  ",
+  it("creates a blank design with a trimmed name and a language", () => {
+    expect(createDesignTemplateSchema.parse({ name: "  Sidebar  ", locale: "fr" })).toEqual({
+      name: "Sidebar",
+      locale: "fr",
     });
-    expect(parsed).toEqual({ mode: "new", cvId: CV_ID, name: "Frontend roles", description: "" });
+    expect(createDesignTemplateSchema.safeParse({ name: " ", locale: "en" }).success).toBe(false);
+    expect(createDesignTemplateSchema.safeParse({ name: "X", locale: "de" }).success).toBe(false);
   });
 
-  it("replacing needs only the template: its name and description stay", () => {
-    expect(
-      saveCvAsTemplateSchema.parse({ mode: "replace", cvId: CV_ID, templateId: TEMPLATE_ID }),
-    ).toEqual({ mode: "replace", cvId: CV_ID, templateId: TEMPLATE_ID });
-    expect(
-      saveCvAsTemplateSchema.safeParse({ mode: "replace", cvId: CV_ID, templateId: "nope" })
-        .success,
-    ).toBe(false);
-  });
-
-  it("rejects empty names and descriptions over the limit", () => {
-    expect(
-      saveCvAsTemplateSchema.safeParse({ mode: "new", cvId: CV_ID, name: " ", description: "" })
-        .success,
-    ).toBe(false);
-    const tooLong = saveCvAsTemplateSchema.safeParse({
-      mode: "new",
-      cvId: CV_ID,
-      name: "Valid",
-      description: "x".repeat(TEMPLATE_DESCRIPTION_MAX + 1),
-    });
-    expect(tooLong.success).toBe(false);
-  });
-
-  it("autosaves a full, validated template draft", () => {
+  it("autosaves a validated design, ignoring the composition the draft carries", () => {
     const draft = {
       id: TEMPLATE_ID,
       expectedRevision: 3,
-      name: "Frontend roles",
-      description: "",
-      locale: "fr",
-      definition: createDefaultDefinition(buildMasterData()),
+      name: "Sidebar",
+      locale: "en",
+      definition: { schemaVersion: 1 },
+      design: createBlankDesign(),
     };
-    expect(saveTemplateSchema.safeParse(draft).success).toBe(true);
+    const parsed = saveTemplateDesignSchema.parse(draft);
+    expect(parsed).not.toHaveProperty("definition");
+    expect(parsed.design).toEqual(createBlankDesign());
     expect(
-      saveTemplateSchema.safeParse({ ...draft, definition: { schemaVersion: 2 } }).success,
+      saveTemplateDesignSchema.safeParse({ ...draft, design: { ...draft.design, pages: 9 } })
+        .success,
     ).toBe(false);
   });
 
@@ -72,7 +47,7 @@ describe("template schemas", () => {
     ).toBe(false);
   });
 
-  it("links to the editor and to a new CV with the template preselected", () => {
+  it("links to the designer and to a new CV with the template preselected", () => {
     expect(templateHref(TEMPLATE_ID)).toBe(`/dashboard/templates/${TEMPLATE_ID}`);
     expect(newCvFromTemplateHref(TEMPLATE_ID)).toBe(`/dashboard/cvs/new?template=${TEMPLATE_ID}`);
   });

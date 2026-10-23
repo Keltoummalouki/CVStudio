@@ -1,6 +1,7 @@
 import { NEW_CV_HREF } from "@/config/navigation";
 
 export const TEMPLATES_HREF = "/dashboard/templates";
+export const NEW_TEMPLATE_HREF = `${TEMPLATES_HREF}/new`;
 
 /** The query parameter the New CV page reads to start from a template. */
 export const TEMPLATE_QUERY_PARAM = "template";

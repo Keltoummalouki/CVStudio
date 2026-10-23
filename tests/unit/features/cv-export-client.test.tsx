@@ -1,6 +1,8 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createBlankDesign } from "@/features/cv-design/design";
+import { createElement } from "@/features/cv-design/operations";
 import { PrintReady } from "@/features/cv-export/components/print-ready";
 import { PrintToolbar } from "@/features/cv-export/components/print-toolbar";
 import { useCvExport } from "@/features/cv-export/components/use-cv-export";
@@ -167,7 +169,7 @@ describe("PrintReady", () => {
     // A broken portrait must not block printing forever.
     image.decode = vi.fn(() => Promise.reject(new Error("decode failed")));
 
-    const { unmount } = render(<PrintReady autoPrint />);
+    const { unmount } = renderWithIntl(<PrintReady autoPrint cvId={CV_ID} />);
 
     await waitFor(() => expect(document.documentElement.dataset.printReady).toBe("true"));
     expect(image.decode).toHaveBeenCalled();
@@ -178,11 +180,43 @@ describe("PrintReady", () => {
   });
 
   it("only marks the page ready by default", async () => {
-    const { unmount } = render(<PrintReady />);
+    const { unmount } = renderWithIntl(<PrintReady cvId={CV_ID} />);
 
     await waitFor(() => expect(document.documentElement.dataset.printReady).toBe("true"));
     expect(window.print).not.toHaveBeenCalled();
     unmount();
+  });
+
+  it("refuses to print a design whose text overlaps, and says so", async () => {
+    const box = (id: string, y: number) => ({
+      ...createElement(createBlankDesign(), { type: "text", text: { shared: id } }),
+      id,
+      y,
+    });
+    // Two text boxes 20 mm high, 10 mm apart: they overlap.
+    const design = {
+      ...createBlankDesign(),
+      elements: [
+        { ...box("11111111-1111-4111-8111-111111111111", 20), h: 20 },
+        { ...box("22222222-2222-4222-8222-222222222222", 30), h: 20 },
+      ],
+    };
+    const { unmount } = renderWithIntl(<PrintReady autoPrint design={design} cvId={CV_ID} />);
+
+    await waitFor(() => expect(document.documentElement.dataset.printReady).toBe("true"));
+    // The PDF engine reads this and refuses; the browser's dialog does not open.
+    expect(document.documentElement.dataset.layoutIssues).toBe("1");
+    expect(window.print).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This CV’s design cuts off or overlaps text in 1 place, so it isn’t printed.",
+    );
+    expect(screen.getByRole("link", { name: "Open in the editor" })).toHaveAttribute(
+      "href",
+      `/en/dashboard/cvs/${CV_ID}`,
+    );
+
+    unmount();
+    expect(document.documentElement.dataset.layoutIssues).toBeUndefined();
   });
 });
 

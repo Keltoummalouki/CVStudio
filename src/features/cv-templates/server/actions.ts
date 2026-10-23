@@ -2,119 +2,76 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { definitionSchema } from "@/features/cv-builder/definition";
+import { DEFAULT_HEADER } from "@/features/cv-builder/defaults";
+import { DEFINITION_SCHEMA_VERSION, type CvDefinition } from "@/features/cv-builder/definition";
+import { createBlankDesign } from "@/features/cv-design/design";
 import { fail, issuesFromZod, mapDatabaseError, ok, type ActionResult } from "@/lib/actions/result";
 import { getOwnerContext } from "@/lib/auth/session";
 import { asJsonObject } from "@/lib/supabase/json";
 import {
   TEMPLATE_NAME_MAX,
-  saveCvAsTemplateSchema,
-  saveTemplateSchema,
+  createDesignTemplateSchema,
+  saveTemplateDesignSchema,
   templateNameSchema,
 } from "../schemas";
-import { readTemplateChoices, type TemplateChoice } from "./queries";
 
 const idSchema = z.uuid();
-
-/** For the "Replace a template" choice, loaded when the dialog opens. */
-export async function getTemplateChoices(): Promise<ActionResult<TemplateChoice[]>> {
-  const context = await getOwnerContext();
-  if (!context) return fail("unauthorized");
-  try {
-    return ok(await readTemplateChoices(context));
-  } catch {
-    return fail("unavailable");
-  }
-}
+const DESIGN_RENDERER = "canvas-v1";
 
 /**
- * Copies a CV's saved setup (sections, order, selection, wording, language)
- * into a new template, or over an existing one. Either way it is a copy: the
- * CV and the template stay independent, and CVs made from a replaced template
- * keep their own setup.
- *
- * No refresh(): the builder that calls this must keep its undo history; the
- * templates list is read fresh on the next visit.
+ * A design places career content, it does not choose it: a CV made from one
+ * starts with all career data. The stored composition stays empty.
  */
-export async function saveCvAsTemplate(
-  input: unknown,
-): Promise<ActionResult<{ id: string; name: string }>> {
+const EMPTY_DEFINITION: CvDefinition = {
+  schemaVersion: DEFINITION_SCHEMA_VERSION,
+  header: DEFAULT_HEADER,
+  sections: [],
+};
+
+/** "Create a template": a blank A4 page, opened next in the designer. */
+export async function createDesignTemplate(input: unknown): Promise<ActionResult<{ id: string }>> {
   const context = await getOwnerContext();
   if (!context) return fail("unauthorized");
-  const parsed = saveCvAsTemplateSchema.safeParse(input);
+  const parsed = createDesignTemplateSchema.safeParse(input);
   if (!parsed.success) return fail("invalid_input", issuesFromZod(parsed.error));
-  const { supabase, owner } = context;
 
-  const source = await supabase
-    .from("cv_documents")
-    .select("locale, definition")
-    .eq("owner_id", owner.id)
-    .eq("id", parsed.data.cvId)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (source.error) return fail("unavailable");
-  if (!source.data) return fail("not_found");
-  const definition = definitionSchema.safeParse(source.data.definition);
-  if (!definition.success) return fail("invalid_input");
-  const setup = {
-    locale: source.data.locale,
-    schema_version: definition.data.schemaVersion,
-    definition: asJsonObject(definition.data),
-  };
-
-  if (parsed.data.mode === "new") {
-    const { data, error } = await supabase
-      .from("cv_templates")
-      .insert({
-        ...setup,
-        owner_id: owner.id,
-        name: parsed.data.name,
-        description: parsed.data.description,
-      })
-      .select("id, name")
-      .single();
-    if (error) return fail(mapDatabaseError(error));
-    return ok(data);
-  }
-
-  const { data, error } = await supabase
+  const { data, error } = await context.supabase
     .from("cv_templates")
-    .update(setup)
-    .eq("owner_id", owner.id)
-    .eq("id", parsed.data.templateId)
-    .is("deleted_at", null)
-    .select("id, name")
-    .maybeSingle();
+    .insert({
+      owner_id: context.owner.id,
+      name: parsed.data.name,
+      locale: parsed.data.locale,
+      schema_version: EMPTY_DEFINITION.schemaVersion,
+      definition: asJsonObject(EMPTY_DEFINITION),
+      visual_template_key: DESIGN_RENDERER,
+      design: asJsonObject(createBlankDesign()),
+    })
+    .select("id")
+    .single();
   if (error) return fail(mapDatabaseError(error));
-  if (!data) return fail("not_found");
-  return ok(data);
+  return ok({ id: data.id });
 }
 
 /**
- * Autosave target of the template editor. Like a CV, the write only applies
- * to the revision the editor started from; a mismatch returns "stale".
+ * Autosave target of the designer. Like a CV, the write only applies to the
+ * revision the editor started from; a mismatch returns "stale".
  */
-export async function saveTemplate(
+export async function saveTemplateDesign(
   input: unknown,
 ): Promise<ActionResult<{ revision: number; updatedAt: string }>> {
   const context = await getOwnerContext();
   if (!context) return fail("unauthorized");
-  const parsed = saveTemplateSchema.safeParse(input);
+  const parsed = saveTemplateDesignSchema.safeParse(input);
   if (!parsed.success) return fail("invalid_input", issuesFromZod(parsed.error));
-  const { id, expectedRevision, name, description, locale, definition } = parsed.data;
+  const { id, expectedRevision, name, locale, design } = parsed.data;
   const { supabase, owner } = context;
 
   const { data, error } = await supabase
     .from("cv_templates")
-    .update({
-      name,
-      description,
-      locale,
-      schema_version: definition.schemaVersion,
-      definition: asJsonObject(definition),
-    })
+    .update({ name, locale, design: asJsonObject(design) })
     .eq("owner_id", owner.id)
     .eq("id", id)
+    .eq("visual_template_key", DESIGN_RENDERER)
     .eq("revision", expectedRevision)
     .is("deleted_at", null)
     .select("revision, updated_at")
@@ -127,6 +84,7 @@ export async function saveTemplate(
       .select("id")
       .eq("owner_id", owner.id)
       .eq("id", id)
+      .eq("visual_template_key", DESIGN_RENDERER)
       .is("deleted_at", null)
       .maybeSingle();
     if (current.error) return fail("unavailable");
@@ -173,7 +131,7 @@ export async function duplicateTemplate(
 
   const source = await supabase
     .from("cv_templates")
-    .select("description, locale, schema_version, definition")
+    .select("description, locale, schema_version, definition, visual_template_key, design")
     .eq("owner_id", owner.id)
     .eq("id", parsedId.data)
     .is("deleted_at", null)

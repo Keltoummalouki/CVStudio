@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultDefinition } from "@/features/cv-builder/defaults";
+import { createBlankDesign } from "@/features/cv-design/design";
 import { buildMasterData, sequentialIds } from "../../fixtures/master-data";
 import {
   callsOf,
@@ -78,10 +79,11 @@ describe("createCv", () => {
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it("copies a template's setup and records where it came from", async () => {
+  it("copies a design, fills it with all career data and records where it came from", async () => {
+    const design = createBlankDesign();
     const fake = signIn({
       tables: {
-        cv_templates: { data: { id: TEMPLATE_ID, name: "Engineering", definition } },
+        cv_templates: { data: { id: TEMPLATE_ID, name: "Sidebar", design } },
         cv_documents: { data: { id: CV_ID } },
       },
     });
@@ -90,18 +92,24 @@ describe("createCv", () => {
       ok: true,
     });
 
+    // Only the owner's live designs: setups saved from CVs earlier are retired.
     const template = fake.queriesOn("cv_templates")[0];
     expect(isOwnerScoped(template)).toBe(true);
     expect(callsOf(template, "is")).toContainEqual(["deleted_at", null]);
+    expect(callsOf(template, "eq")).toContainEqual(["visual_template_key", "canvas-v1"]);
     const [row] = callsOf(fake.queriesOn("cv_documents")[0], "insert")[0] as [
       Record<string, unknown>,
     ];
     expect(row).toMatchObject({
+      visual_template_key: "canvas-v1",
+      design,
       created_from_template_id: TEMPLATE_ID,
-      created_from_template_name: "Engineering",
-      definition: JSON.parse(JSON.stringify(definition)),
+      created_from_template_name: "Sidebar",
     });
-    expect(mocks.loadMasterData).not.toHaveBeenCalled();
+    // The content is the career data's, not the template's: the design only places it.
+    const sections = (row.definition as typeof definition).sections.map((section) => section.kind);
+    expect(sections).toEqual(definition.sections.map((section) => section.kind));
+    expect(mocks.loadMasterData).toHaveBeenCalledTimes(1);
   });
 
   it("reports a template that is not the owner's as not found", async () => {
@@ -114,9 +122,9 @@ describe("createCv", () => {
     expect(fake.queriesOn("cv_documents")).toHaveLength(0);
   });
 
-  it("refuses a template whose stored layout is unreadable", async () => {
+  it("refuses a template whose stored design is unreadable", async () => {
     signIn({
-      tables: { cv_templates: { data: { id: TEMPLATE_ID, name: "Old", definition: { v: 0 } } } },
+      tables: { cv_templates: { data: { id: TEMPLATE_ID, name: "Old", design: { v: 0 } } } },
     });
 
     expect(await createCv({ name: "CV", locale: "en", templateId: TEMPLATE_ID })).toEqual({
@@ -221,11 +229,13 @@ describe("duplicateCv", () => {
     locale: "fr",
     schema_version: 1,
     definition,
+    visual_template_key: "canvas-v1",
+    design: createBlankDesign(),
     created_from_template_id: TEMPLATE_ID,
     created_from_template_name: "Engineering",
   };
 
-  it("inserts an independent copy for the same owner", async () => {
+  it("inserts an independent copy for the same owner, its design included", async () => {
     const fake = signIn({ tables: { cv_documents: [{ data: source }, { data: { id: "copy" } }] } });
 
     expect(await duplicateCv(CV_ID, "Copy of CV")).toEqual({ ok: true, data: { id: "copy" } });

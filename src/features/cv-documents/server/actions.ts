@@ -3,19 +3,21 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { createDefaultDefinition } from "@/features/cv-builder/defaults";
-import { definitionSchema, type CvDefinition } from "@/features/cv-builder/definition";
+import type { CvDefinition } from "@/features/cv-builder/definition";
 import { loadMasterData } from "@/features/cv-builder/server/load-master-data";
+import { designSchema } from "@/features/cv-design/design";
 import { fail, issuesFromZod, mapDatabaseError, ok, type ActionResult } from "@/lib/actions/result";
 import { getOwnerContext } from "@/lib/auth/session";
+import type { Json } from "@/lib/supabase/database.types";
 import { asJsonObject } from "@/lib/supabase/json";
 import { cvNameSchema, createCvSchema, saveCvSchema } from "../schemas";
 
 const idSchema = z.uuid();
 
 /**
- * Creates a CV from all active career data in the reference section order, or
- * from a copy of a template's setup. The copy is independent: editing or
- * deleting the template later never changes this CV.
+ * Creates a CV from all active career data in the reference section order,
+ * drawn by Classic or by one of the owner's designs. A design is copied: editing
+ * or deleting the template later never changes this CV.
  */
 export async function createCv(input: unknown): Promise<ActionResult<{ id: string }>> {
   const context = await getOwnerContext();
@@ -24,32 +26,39 @@ export async function createCv(input: unknown): Promise<ActionResult<{ id: strin
   if (!parsed.success) return fail("invalid_input", issuesFromZod(parsed.error));
   const { supabase, owner } = context;
 
-  let definition: CvDefinition;
-  let provenance: { created_from_template_id: string; created_from_template_name: string } | null =
-    null;
+  let look: {
+    visual_template_key: "canvas-v1";
+    design: Json;
+    created_from_template_id: string;
+    created_from_template_name: string;
+  } | null = null;
   if (parsed.data.templateId) {
+    // Only designs: setups saved from CVs before 2026-10-23 are retired.
     const template = await supabase
       .from("cv_templates")
-      .select("id, name, definition")
+      .select("id, name, design")
       .eq("owner_id", owner.id)
       .eq("id", parsed.data.templateId)
+      .eq("visual_template_key", "canvas-v1")
       .is("deleted_at", null)
       .maybeSingle();
     if (template.error) return fail("unavailable");
     if (!template.data) return fail("not_found");
-    const copied = definitionSchema.safeParse(template.data.definition);
-    if (!copied.success) return fail("invalid_input");
-    definition = copied.data;
-    provenance = {
+    const design = designSchema.safeParse(template.data.design);
+    if (!design.success) return fail("invalid_input");
+    look = {
+      visual_template_key: "canvas-v1",
+      design: asJsonObject(design.data),
       created_from_template_id: template.data.id,
       created_from_template_name: template.data.name,
     };
-  } else {
-    try {
-      definition = createDefaultDefinition(await loadMasterData(context));
-    } catch {
-      return fail("unavailable");
-    }
+  }
+
+  let definition: CvDefinition;
+  try {
+    definition = createDefaultDefinition(await loadMasterData(context));
+  } catch {
+    return fail("unavailable");
   }
 
   const { data, error } = await supabase
@@ -60,7 +69,7 @@ export async function createCv(input: unknown): Promise<ActionResult<{ id: strin
       locale: parsed.data.locale,
       schema_version: definition.schemaVersion,
       definition: asJsonObject(definition),
-      ...provenance,
+      ...look,
     })
     .select("id")
     .single();
@@ -150,7 +159,7 @@ export async function duplicateCv(
   const source = await supabase
     .from("cv_documents")
     .select(
-      "locale, schema_version, definition, created_from_template_id, created_from_template_name",
+      "locale, schema_version, definition, visual_template_key, design, created_from_template_id, created_from_template_name",
     )
     .eq("owner_id", owner.id)
     .eq("id", parsedId.data)

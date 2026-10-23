@@ -21,8 +21,8 @@ function CurrentLocation() {
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   );
   const isCvEditor =
-    (pathname.startsWith("/dashboard/cvs/") && !pathname.endsWith("/new")) ||
-    pathname.startsWith("/dashboard/templates/");
+    (pathname.startsWith("/dashboard/cvs/") || pathname.startsWith("/dashboard/templates/")) &&
+    !pathname.endsWith("/new");
   return (
     <nav aria-label={tStudio("breadcrumb")} className="min-w-0">
       <ol className="flex min-w-0 items-center gap-2.5 text-xs">

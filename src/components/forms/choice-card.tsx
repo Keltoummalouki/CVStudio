@@ -46,7 +46,10 @@ export function ChoiceCard({
           {media}
         </span>
       ) : null}
-      <span className={cn("flex min-w-0 flex-1 flex-col", compact ? "gap-1" : "gap-2")}>
+      {/* Names without spaces ("My_CV_Full_Stack") must wrap instead of running under the check. */}
+      <span
+        className={cn("flex min-w-0 flex-1 flex-col wrap-anywhere", compact ? "gap-1" : "gap-2")}
+      >
         <span className={cn("font-semibold", compact ? "text-sm" : "text-lg tracking-[-0.02em]")}>
           {title}
         </span>

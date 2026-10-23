@@ -349,6 +349,7 @@ export type Database = {
           created_from_template_name: string | null;
           definition: NonNullable<Json>;
           deleted_at: string | null;
+          design: Json | null;
           id: string;
           locale: string;
           name: string;
@@ -365,6 +366,7 @@ export type Database = {
           created_from_template_name?: string | null;
           definition?: NonNullable<Json>;
           deleted_at?: string | null;
+          design?: Json | null;
           id?: string;
           locale?: string;
           name: string;
@@ -380,6 +382,7 @@ export type Database = {
           created_from_template_name?: string | null;
           definition?: NonNullable<Json>;
           deleted_at?: string | null;
+          design?: Json | null;
           id?: string;
           locale?: string;
           name?: string;
@@ -405,6 +408,7 @@ export type Database = {
           definition: NonNullable<Json>;
           deleted_at: string | null;
           description: string;
+          design: Json | null;
           id: string;
           locale: string;
           name: string;
@@ -420,6 +424,7 @@ export type Database = {
           definition?: NonNullable<Json>;
           deleted_at?: string | null;
           description?: string;
+          design?: Json | null;
           id?: string;
           locale?: string;
           name: string;
@@ -434,6 +439,7 @@ export type Database = {
           definition?: NonNullable<Json>;
           deleted_at?: string | null;
           description?: string;
+          design?: Json | null;
           id?: string;
           locale?: string;
           name?: string;

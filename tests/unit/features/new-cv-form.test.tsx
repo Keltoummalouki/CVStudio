@@ -15,11 +15,10 @@ vi.mock("@/lib/i18n/navigation", async (importOriginal) => ({
   useRouter: () => ({ push }),
 }));
 
-const FRENCH_TEMPLATE: TemplateChoice = {
+const DESIGN: TemplateChoice = {
   id: "33333333-3333-4333-8333-333333333333",
-  name: "Candidatures en français",
-  description: "Sans projets.",
-  locale: "fr",
+  name: "Sidebar",
+  description: "Two columns, photo on the left.",
 };
 
 describe("new CV form", () => {
@@ -38,7 +37,7 @@ describe("new CV form", () => {
     expect(template).toHaveAccessibleName("Template");
     expect(language).toHaveAccessibleName("CV language");
     expect(screen.getByRole("radio", { name: /^Classic/ })).toBeChecked();
-    expect(screen.getByText(/Your own templates will appear here/)).toBeInTheDocument();
+    expect(screen.getByText(/Templates you design appear here/)).toBeInTheDocument();
 
     // The name is checked before anything is created.
     await user.click(screen.getByRole("button", { name: "Create and open" }));
@@ -56,45 +55,38 @@ describe("new CV form", () => {
     expect(push).toHaveBeenCalledWith("/dashboard/cvs/new-cv");
   });
 
-  it("choosing a template switches to its language, which stays changeable", async () => {
+  it("offers the owner's designs, which never decide the language", async () => {
     const user = userEvent.setup();
-    renderWithIntl(
-      <NewCvForm defaultLocale="en" templates={[FRENCH_TEMPLATE]} initialTemplateId={null} />,
-    );
+    renderWithIntl(<NewCvForm defaultLocale="en" templates={[DESIGN]} initialTemplateId={null} />);
 
     expect(screen.getByRole("radio", { name: /^Classic/ })).toBeChecked();
     expect(screen.getByText(/starts with all your current career data/)).toBeInTheDocument();
-    await user.click(screen.getByRole("radio", { name: /Candidatures en français/ }));
-    expect(screen.getByRole("radio", { name: /^French/ })).toBeChecked();
-    expect(screen.getByText(/Entries added since the template was saved/)).toBeInTheDocument();
-    expect(screen.getByText("Saved in French")).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: /^Sidebar/ }));
+    expect(screen.getByRole("radio", { name: /^English/ })).toBeChecked();
+    expect(screen.getByText(/The CV uses this design/)).toBeInTheDocument();
+    expect(screen.getByText("Two columns, photo on the left.")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("radio", { name: /^English/ }));
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Bilingual test");
     await user.click(screen.getByRole("button", { name: "Create and open" }));
     expect(createCv).toHaveBeenCalledWith({
       name: "Bilingual test",
       locale: "en",
-      templateId: FRENCH_TEMPLATE.id,
+      templateId: DESIGN.id,
     });
   });
 
   it("preselects the template the owner chose on the templates page, but only their own", () => {
     const { unmount } = renderWithIntl(
-      <NewCvForm
-        defaultLocale="en"
-        templates={[FRENCH_TEMPLATE]}
-        initialTemplateId={FRENCH_TEMPLATE.id}
-      />,
+      <NewCvForm defaultLocale="en" templates={[DESIGN]} initialTemplateId={DESIGN.id} />,
     );
-    expect(screen.getByRole("radio", { name: /Candidatures en français/ })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /^French/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Sidebar/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^English/ })).toBeChecked();
     unmount();
 
     renderWithIntl(
       <NewCvForm
         defaultLocale="en"
-        templates={[FRENCH_TEMPLATE]}
+        templates={[DESIGN]}
         initialTemplateId="44444444-4444-4444-8444-444444444444"
       />,
     );
@@ -106,11 +98,7 @@ describe("new CV form", () => {
     const user = userEvent.setup();
     vi.mocked(createCv).mockResolvedValue({ ok: false, error: "not_found" });
     renderWithIntl(
-      <NewCvForm
-        defaultLocale="en"
-        templates={[FRENCH_TEMPLATE]}
-        initialTemplateId={FRENCH_TEMPLATE.id}
-      />,
+      <NewCvForm defaultLocale="en" templates={[DESIGN]} initialTemplateId={DESIGN.id} />,
     );
 
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Gone");
@@ -144,32 +132,31 @@ describe("new CV form", () => {
     });
   });
 
-  it("keeps the job post's language when a template saved in another one is chosen", async () => {
+  it("keeps the job post's language when a design is chosen", async () => {
     const user = userEvent.setup();
     renderWithIntl(
       <NewCvForm
         defaultLocale="fr"
-        templates={[FRENCH_TEMPLATE]}
+        templates={[DESIGN]}
         initialTemplateId={null}
         job={{ id: "job-1", title: "Frontend developer", company: "", language: "en" }}
       />,
     );
 
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Frontend developer");
-    await user.click(screen.getByRole("radio", { name: /Candidatures en français/ }));
+    await user.click(screen.getByRole("radio", { name: /^Sidebar/ }));
     expect(screen.getByRole("radio", { name: /^English/ })).toBeChecked();
   });
 
   it("leaves the language to the usual default for a post in another language", () => {
     renderWithIntl(
       <NewCvForm
-        defaultLocale="en"
-        templates={[FRENCH_TEMPLATE]}
-        initialTemplateId={FRENCH_TEMPLATE.id}
+        defaultLocale="fr"
+        templates={[DESIGN]}
+        initialTemplateId={DESIGN.id}
         job={{ id: "job-1", title: "Entwickler", company: "GmbH", language: "other" }}
       />,
     );
-    // The chosen template's language, as without a job post.
     expect(screen.getByRole("radio", { name: /^French/ })).toBeChecked();
   });
 });
