@@ -15,9 +15,9 @@ export function StudioMotion() {
       cleanup();
       cleanup = () => {};
       if (!media.matches || /\/cvs\/[^/]+$|\/templates\/[^/]+$/.test(pathname)) return;
-      const module = await import("lenis").catch(() => null);
-      if (!module || cancelled || current !== generation || !media.matches) return;
-      const { default: Lenis } = module;
+      const lenisModule = await import("lenis").catch(() => null);
+      if (!lenisModule || cancelled || current !== generation || !media.matches) return;
+      const { default: Lenis } = lenisModule;
       const lenis = new Lenis({
         autoRaf: true,
         autoToggle: true,

@@ -544,7 +544,8 @@
 }
 .studio-welcome-art {
   background: #d27049;
-  color: #252c28;
+  /* The shell ink (#252c28) reads at 4.2:1 here; the small caption needs 4.5:1. */
+  color: #1c231f;
 }
 .studio-welcome-art .studio-paper {
   height: 19rem;

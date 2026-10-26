@@ -147,7 +147,10 @@ describe("design operations", () => {
       type: "text",
       text: { en: "Hi", fr: "Salut" },
     });
-    expect(reworded.elements[0]?.content).toEqual({ type: "text", text: { en: "Hi", fr: "Salut" } });
+    expect(reworded.elements[0]?.content).toEqual({
+      type: "text",
+      text: { en: "Hi", fr: "Salut" },
+    });
     // Content of another kind is never swapped in.
     expect(setElementContent(reworded, first.element.id, SHAPE)).toBe(reworded);
 
@@ -185,7 +188,10 @@ describe("design operations", () => {
     design = b.design;
 
     const swapped = moveInReadingOrder(design, b.element.id, -1);
-    expect(readingOrder(swapped).map((element) => element.id)).toEqual([b.element.id, a.element.id]);
+    expect(readingOrder(swapped).map((element) => element.id)).toEqual([
+      b.element.id,
+      a.element.id,
+    ]);
     expect(moveInReadingOrder(swapped, b.element.id, -1)).toBe(swapped);
 
     const sorted = sortReadingOrder(swapped);

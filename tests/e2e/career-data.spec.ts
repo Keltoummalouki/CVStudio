@@ -140,7 +140,8 @@ test.describe("career data", () => {
     await page.getByRole("button", { name: /Show archived/ }).click();
     await page.getByRole("button", { name: `More actions for First ${tag}` }).click();
     await page.getByRole("menuitem", { name: "Restore" }).click();
-    await expect(page.getByText("Restored")).toBeVisible();
+    // Exact: the closing menu's "Restore" + "Delete permanently" also contains "restored".
+    await expect(page.getByText("Restored", { exact: true })).toBeVisible();
   });
 
   test("saves the profile and marks the first setup step done", async ({ page }) => {

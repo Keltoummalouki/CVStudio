@@ -76,6 +76,14 @@ async function step<T>(stage: PdfStage, failure: string, run: () => Promise<T>):
 const LOCAL_CHANNELS = [undefined, "chrome", "msedge"] as const;
 
 /**
+ * Headless Chromium on Linux hints fonts by default, which moves glyphs off
+ * their natural advances: PDF readers then find gaps inside words ("Full st
+ * ack develo per"), and so would ATS parsers. The packaged Chromium already
+ * turns hinting off; local and CI exports match it.
+ */
+const LOCAL_ARGS = ["--font-render-hinting=none"];
+
+/**
  * Serverless hosts (Vercel, AWS Lambda) have no browser: use the packaged
  * Chromium build. PDF_CHROMIUM_PATH forces a specific binary anywhere else.
  */
@@ -103,13 +111,13 @@ async function launchBrowser(timeout: number): Promise<Browser> {
   if (process.env.PDF_CHROMIUM_PATH) {
     const executablePath = process.env.PDF_CHROMIUM_PATH;
     return step("launch", "The browser in PDF_CHROMIUM_PATH did not start", () =>
-      chromium.launch({ headless: true, executablePath, timeout }),
+      chromium.launch({ headless: true, executablePath, args: LOCAL_ARGS, timeout }),
     );
   }
   let lastError: unknown;
   for (const channel of LOCAL_CHANNELS) {
     try {
-      return await chromium.launch({ headless: true, channel, timeout });
+      return await chromium.launch({ headless: true, channel, args: LOCAL_ARGS, timeout });
     } catch (error) {
       // A missing browser fails immediately; try the next one.
       lastError = error;

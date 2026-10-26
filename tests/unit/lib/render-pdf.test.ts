@@ -97,6 +97,8 @@ describe("renderPdf", () => {
     expect(launch).toHaveBeenCalledWith({
       headless: true,
       channel: undefined,
+      // Without hinting, as the packaged Chromium: PDF text keeps whole words.
+      args: ["--font-render-hinting=none"],
       timeout: expect.any(Number),
     });
     expect(Buffer.from(pdf).toString("latin1")).toBe("%PDF-1.4");
@@ -137,6 +139,7 @@ describe("renderPdf", () => {
     expect(launch).toHaveBeenCalledWith({
       headless: true,
       executablePath: "/opt/chromium/chrome",
+      args: ["--font-render-hinting=none"],
       timeout: expect.any(Number),
     });
   });

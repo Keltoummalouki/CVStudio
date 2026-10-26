@@ -16,8 +16,7 @@ vi.mock("@/features/cv-renderer/fonts", () => ({
 
 const master = buildMasterData();
 const definition = createDefaultDefinition(master, sequentialIds());
-const resolve = (locale: "en" | "fr") =>
-  resolveCv(definition, master, locale, LABELS[locale]).cv;
+const resolve = (locale: "en" | "fr") => resolveCv(definition, master, locale, LABELS[locale]).cv;
 
 let counter = 0;
 const nextId = () => `20000000-0000-4000-8000-${String((counter += 1)).padStart(12, "0")}`;
@@ -64,11 +63,13 @@ describe("CanvasCv", () => {
     );
 
     expect(container.querySelector("article")).toHaveAttribute("data-visual-template", "canvas-v1");
-    const drawn = [...container.querySelectorAll("[data-element-id]")].map(
-      (node) => node.getAttribute("data-element-id"),
+    const drawn = [...container.querySelectorAll("[data-element-id]")].map((node) =>
+      node.getAttribute("data-element-id"),
     );
     const byType = (type: string) =>
-      design.elements.filter((element) => element.content.type === type).map((element) => element.id);
+      design.elements
+        .filter((element) => element.content.type === type)
+        .map((element) => element.id);
     expect(drawn).toEqual([
       ...byType("shape"),
       ...byType("line"),
