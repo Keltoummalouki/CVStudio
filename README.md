@@ -2,11 +2,11 @@
 
 > **Your career information, organized once. Your CV, customized any time.**
 
-**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus saved templates and print/PDF download. PDF download is verified locally and in production on Vercel; hardening is in progress. See [Development and setup](#development-and-setup).
+**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus template designs (a free-form A4 designer) and print/PDF download. PDF download is verified locally and in production on Vercel; hardening is in progress. See [Development and setup](#development-and-setup).
 
 ## Overview
 
-CVStudio is a **private, owner/admin-managed CV generator**. Instead of repeatedly editing a PDF or word-processing document, the owner maintains structured career data in a dashboard backed by Supabase. A visual CV Builder then composes that data into a configurable document: choose which experiences and projects to include, reorganize sections/subsections, hide selected information, edit CV-specific wording, save a reusable template, preview, print, or download a PDF.
+CVStudio is a **private, owner/admin-managed CV generator**. Instead of repeatedly editing a PDF or word-processing document, the owner maintains structured career data in a dashboard backed by Supabase. A visual CV Builder then composes that data into a configurable document: choose which experiences and projects to include, reorganize sections/subsections, hide selected information, edit CV-specific wording, lay it out with the included Classic design or a template the owner designed, preview, print, or download a PDF.
 
 **The MVP has no AI.** An optional AI phase was approved on 2026-10-22, built in this order: an ATS match score against a pasted job post, then CVs tailored to a job post from the owner's career data, then translation suggestions. The owner reviews every AI suggestion before it is saved or exported; see [`CLAUDE.md`](./CLAUDE.md) §16.
 
@@ -57,10 +57,10 @@ Every applicable entity supports **create, edit, delete, show/hide, and reorderi
 
 ### 3. CV Builder
 
-Create a CV from scratch or from a saved preset:
+Create a CV from the included Classic design or from a template you designed:
 
 1. Choose `English` or `Français` for the CV output.
-2. Start with `classic-reference-v1` and select the content to include.
+2. Choose Classic (`classic-reference-v1`) or one of your template designs; the CV starts with all current career data, then keep what fits.
 3. Add, hide/show, or reorder top-level sections and eligible subsections.
 4. Include/exclude specific records (e.g., a job, project, certificate, skill, bullet).
 5. Adjust per-CV wording or field visibility without editing the original master record.
@@ -75,11 +75,13 @@ CVStudio deliberately distinguishes **three** things:
 
 | Concept | Description |
 | --- | --- |
-| **Visual template** | Renderer and styling. Only the reference-based visual template is required at launch. |
+| **Visual template** | The renderer: Classic (`classic-reference-v1`, reproduced from the reference CVs) or `canvas-v1`, which draws an owner-made design. |
 | **Saved CV document** | Editable CV composition: language, chosen career records, section order/visibility, overrides. |
-| **Saved template (preset)** | Reusable copy of a CV's composition settings. Can be created, named, edited, duplicated, applied, or deleted. |
+| **Template (design)** | An owner-made page design: where the name, contacts, career sections, free text, lines, shapes and photo sit on up to three A4 pages, and how they look. It holds no career data. Created from a blank page in the designer, edited, duplicated, applied, or deleted. |
 
-**Example:** Save a preset called **Full Stack – English** and another called **Frontend – French**. When you create a new CV using either preset, it gets an independent configuration; later preset changes do not unexpectedly rewrite previously saved CVs.
+**Example:** Design a template with the photo and contacts in a tinted left column, and another, text-only one for applicant tracking systems. A new CV made from either gets its own copy of the design, filled with the career data; later changes to the template never rewrite CVs already made from it.
+
+Before 2026-10-23, *Save as template* stored a CV's section setup as a template. Those rows are kept in the database but are no longer listed or offered: templates are designs only.
 
 Deleting a saved template must not erase existing CVs. Destructive operations require appropriate confirmation. Document names, creation time, update time, language, and recent actions should be visible in management lists.
 
@@ -128,11 +130,11 @@ The goal is a genuinely excellent editing experience, not just a stylish page.
 
 ### B. Create and export a CV
 
-`Dashboard → New CV → Choose language/preset → Select content → Configure sections/subsections → Preview → Save → Print or Download PDF`
+`Dashboard → New CV → Choose template and language → Select content → Configure sections/subsections → Preview → Save → Print or Download PDF`
 
-### C. Save and reuse a preset
+### C. Design and reuse a template
 
-`Open CV → Save as template → Give it a name → Manage in Templates → Apply to a new CV → Customize independently`
+`Templates → Create a template (blank A4 page) → Add elements → Drag, resize and style them → Use for a new CV → Customize the CV independently`
 
 ### D. Update a record safely
 
@@ -219,8 +221,8 @@ The final schema will be agreed before migrations. Prefer separate relational ta
 | `certifications` | Certificates, issuers, dates, verification URLs |
 | `languages`, `soft_skills` | Spoken languages/levels and soft skills |
 | `custom_sections` | Custom section/subsection content blocks |
-| `cv_documents` | Named editable CVs with a validated, versioned composition definition |
-| `cv_templates` | Named reusable presets with their own versioned definitions |
+| `cv_documents` | Named editable CVs with a validated, versioned composition definition, and their own copy of the design they were made from |
+| `cv_templates` | Owner-made page designs (a validated, versioned `design` layout) |
 
 Common expectations: UUID identifiers, `owner_id`, timestamps, relevant order fields, constraints/indexes, and Row Level Security. Use typed localized fields, e.g. a carefully validated `{ en, fr }` object, for content that may differ by language.
 
@@ -230,7 +232,7 @@ Common expectations: UUID identifiers, `owner_id`, timestamps, relevant order fi
 - Ordered section tree and per-node visibility.
 - Chosen references to canonical records plus optional field-level overrides.
 - `schema_version` for safe future changes.
-- Applying a template copies its configuration into a new CV, keeping previous documents independent.
+- Applying a template copies its design into a new CV, keeping previous documents independent.
 - Explicit strategy for canonical-record deletion and missing references; do not silently lose CV content.
 - Resolve a consistent composition snapshot during each export.
 
@@ -249,7 +251,7 @@ CVs contain private personal information. Security is mandatory:
 
 ## Development and setup
 
-**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing), on Vercel too. Saved templates are implemented too: save a CV's setup as a new template or over an existing one (after a warning), list them with how many CVs came from each, edit them in the same builder, duplicate, delete with undo, and start new CVs from one. Hardening follows; see the roadmap below. AI phase, step 1 is implemented: job posts with owner-reviewed requirements (typed, or read by AI: Groq, with Gemini as the fallback) and a deterministic ATS match score for every CV (see *Job posts and the ATS match score*).
+**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing), on Vercel too. Templates are page designs: a free-form A4 designer (start from a blank page; add, drag, resize and style elements with snapping guides, keyboard moves, undo/redo and autosave; layout checks), a gallery with how many CVs came from each, duplicate, delete with undo, and new CVs drawn by a design in the preview, print and PDF (see *Template designs*). Hardening follows; see the roadmap below. AI phase, step 1 is implemented: job posts with owner-reviewed requirements (typed, or read by AI: Groq, with Gemini as the fallback) and a deterministic ATS match score for every CV (see *Job posts and the ATS match score*).
 
 ### Prerequisites
 
@@ -393,7 +395,19 @@ A CV stores a versioned, Zod-validated `definition` (`src/features/cv-builder/de
 - **Missing translations** are listed per CV ("Before you export"). They are shown in the preview, marked, and will block print and PDF export (Phase 6). They are resolved by translating in career data, rewording for the CV, or hiding the item.
 - **Resolution** is one pure function (`src/features/cv-builder/resolve.ts`) shared by the live preview and the future print/PDF route; the renderer (`src/features/cv-renderer/classic-reference-v1`) is purely presentational, with CSS-module styles in physical units isolated from the dashboard.
 - **Saving:** the builder autosaves (debounced) with the document `revision`; a write from another tab or device is reported as a conflict (keep mine / load theirs) instead of being overwritten. Deleted CVs are kept (soft delete) so the deletion can be undone.
-- **Templates** (`src/features/cv-templates`) hold the same `definition` plus a name, description and language, and are edited with the same builder. They are copy-on-apply: a CV started from a template gets its own copy of the definition and only records the template's id and name as provenance (no foreign key), so editing, replacing or deleting a template never changes existing CVs. Like CVs, templates read live career data; entries added after a template was saved are not selected in CVs made from it.
+- **Templates** (`src/features/cv-templates`) are page designs (see below). They are copy-on-apply: a CV started from one gets its own copy of the design, a fresh definition with all current career data, and only the template's id and name as provenance (no foreign key), so editing or deleting a template never changes existing CVs.
+
+### Template designs (`canvas-v1`)
+
+The **Templates** page lists the owner's designs next to the included Classic design. *Create a template* opens the designer on a blank A4 page; the page previews the owner's current career data in the template's language.
+
+- **Model** (`src/features/cv-design/design.ts`): a Zod-validated, versioned `design` (`schemaVersion` 1) of up to 3 pages and 80 elements, positioned in millimetres. Elements are the name, title, contacts and links, each built-in or custom career section, the photo (each at most once), and free text (English/French), lines and shapes (as many as needed). Each has a box (`x`, `y`, `w`, `h`, optionally growing to fit its text) and a style (Poppins, Inter or Lora at 8–48 pt, weight, alignment, line height, capitals, colours, background, border, radius, inner margin). The database checks the renderer key, the version and a 256 KiB size cap.
+- **Designer** (`src/features/cv-design/components`, `src/features/cv-templates/components/template-designer.tsx`): click an element to add it; drag to move it, drag a handle to resize it, with edges snapping to the page, its 15 mm margin, its centre and the other elements (Alt drags freely). Arrow keys move the selected element (Shift for 5 mm), Ctrl/Command with the arrows resizes it, Delete removes it, Ctrl/Command+D duplicates it. The properties panel edits position, size and style; the page panel sets the background, the number of pages and the reading order. Changes autosave with the template `revision` (conflicts reported as in the CV editor), with undo/redo. The designer is laid out for desktop and tablet screens; on a phone its panels stack under the page.
+- **Rendering** (`src/features/cv-renderer/canvas-v1`): only element boxes are positioned; the text inside them stays in normal flow. Decorations (photo, lines, shapes) are written first and drawn under the text; text elements follow in the design's **reading order**, which is the order applicant tracking systems and copy-paste read in the PDF. The designer lists that order and can sort it from top to bottom.
+- **Layout checks** (`src/features/cv-design/layout.ts`): the browser measures each box after layout. Text cut off by a fixed box, text running past the bottom of its page, and text boxes overlapping each other are listed in the designer and in the CV editor, and block print and PDF export until fixed: the print page measures again, and the PDF route answers `409 layout_issues` instead of printing a broken page. A design never shrinks text to make it fit.
+- **Retired setups:** templates saved from a CV's section setup before designs existed keep their rows (renderer `classic-reference-v1`, no design) but are never listed, opened or offered for a new CV.
+
+Apply `supabase/migrations/20261023160000_canvas_designs.sql` before deploying this.
 
 ### Job posts and the ATS match score (AI phase, step 1)
 

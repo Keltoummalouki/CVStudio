@@ -1,6 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
+import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
-import { BUILDER_STORAGE_STATE, OWNER_STORAGE_STATE } from "./support/accounts";
+import type { Database } from "../../src/lib/supabase/database.types";
+import { BUILDER_STORAGE_STATE, E2E_BUILDER, OWNER_STORAGE_STATE } from "./support/accounts";
+import { localSupabase } from "./support/local-supabase";
+import { readPdfText } from "./support/pdf-text";
+import { SEED } from "./support/seed";
 
 // The builder owner has a seeded career profile of its own (see support/seed.ts).
 test.use({ storageState: BUILDER_STORAGE_STATE });
@@ -9,201 +14,203 @@ const unique = () => Math.random().toString(36).slice(2, 8);
 const CV_URL = /\/en\/dashboard\/cvs\/[0-9a-f-]{36}$/;
 const TEMPLATE_URL = /\/en\/dashboard\/templates\/[0-9a-f-]{36}$/;
 
-// Visible only: Next keeps pages navigated away from mounted but hidden, and the
-// Templates gallery draws each template's first page with the same renderer.
-const preview = (page: Page) =>
-  page.locator("article[data-visual-template]").filter({ visible: true });
-const outline = (page: Page) => page.getByRole("navigation", { name: "CV structure" });
-const sectionCount = (page: Page, kind: string) =>
-  preview(page).locator(`[data-section-kind="${kind}"]`);
+const canvas = (page: Page) => page.getByRole("region", { name: "Design canvas" });
+const frame = (page: Page, name: RegExp) => canvas(page).getByRole("button", { name });
+const field = (page: Page, name: string) => page.getByRole("spinbutton", { name, exact: true });
 const expectSaved = (page: Page) =>
   expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
 
-async function createCv(page: Page, name: string) {
-  await page.goto("/en/dashboard/cvs/new");
-  await page.getByRole("textbox", { name: "Name" }).fill(name);
-  // The built-in template: every active entry of the career data.
-  await page.getByRole("radio", { name: /^Classic/ }).check();
+/** "Create a template": a blank A4 page in the designer, renamed. */
+async function createDesign(page: Page, name: string) {
+  await page.goto("/en/dashboard/templates");
+  await page.getByRole("button", { name: "Create a template" }).first().click();
+  await expect(page).toHaveURL(TEMPLATE_URL);
+  await page.getByRole("textbox", { name: "Template name" }).fill(name);
+}
+
+/** A new CV drawn by the design open in the designer; returns its id. */
+async function useForNewCv(page: Page, design: string) {
+  await expectSaved(page);
+  await page.getByRole("link", { name: "Use for a new CV" }).click();
+  await expect(page).toHaveURL(/\/en\/dashboard\/cvs\/new\?template=/);
+  await expect(page.getByRole("radio", { name: new RegExp(`^${design}`) })).toBeChecked();
   await page.getByRole("radio", { name: /^English/ }).check();
+  await page.getByRole("textbox", { name: "Name" }).fill(`CV ${design}`);
   await page.getByRole("button", { name: "Create and open" }).click();
   await expect(page).toHaveURL(CV_URL);
-  await expect(page.getByRole("textbox", { name: "CV name" })).toHaveValue(name);
+  return page.url().split("/").at(-1) ?? "";
 }
 
-/** In the CV builder: More actions → Save as template. */
-async function openSaveAsTemplate(page: Page) {
-  await page.getByRole("button", { name: "More actions" }).click();
-  await page.getByRole("menuitem", { name: "Save as template…" }).click();
-  return page.getByRole("dialog", { name: "Save as template" });
+/** PDF exports run one at a time per owner: wait while another test's export runs. */
+async function requestPdf(page: Page, id: string) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const response = await page.request.get(`/api/cvs/${id}/pdf`);
+    if (response.status() !== 429) return response;
+    await page.waitForTimeout(1000);
+  }
+  throw new Error("The PDF export stayed busy");
 }
 
-async function saveAsNewTemplate(page: Page, name: string) {
-  const dialog = await openSaveAsTemplate(page);
-  await dialog.getByRole("textbox", { name: "Template name" }).fill(name);
-  await dialog.getByRole("textbox", { name: /Description/ }).fill("For frontend roles");
-  await dialog.getByRole("button", { name: "Save template" }).click();
-  await expect(page.getByText(`Template “${name}” saved`)).toBeVisible();
-  await expect(dialog).toBeHidden();
+/** Drags the pointer from the centre of a box by (dx, dy) screen pixels. */
+async function drag(
+  page: Page,
+  box: { x: number; y: number; width: number; height: number },
+  dx: number,
+  dy: number,
+) {
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 10 });
+  await page.mouse.up();
 }
 
-test.describe("saved templates", () => {
-  test.skip(({ isMobile }) => isMobile, "Desktop flows.");
+test.describe("template designer", () => {
+  test.skip(({ isMobile }) => isMobile, "The designer is laid out for larger screens.");
 
-  test("a CV saved as a template starts new CVs that stay independent of it", async ({ page }) => {
-    const template = `Template ${unique()}`;
-    await createCv(page, `Source ${unique()}`);
-    // A recognizable setup: no soft skills.
-    await outline(page).getByRole("button", { name: "Show “Soft skills” on the CV" }).click();
-    await expect(sectionCount(page, "soft_skills")).toHaveCount(0);
-    await saveAsNewTemplate(page, template);
+  test("designs a blank page: adds, moves and resizes elements, and keeps them", async ({
+    page,
+  }) => {
+    const name = `Design ${unique()}`;
+    await createDesign(page, name);
+    await expect(canvas(page).getByText(/Add elements from the list/)).toBeVisible();
 
-    // The template is listed, unused so far.
-    await page.goto("/en/dashboard/templates");
-    const row = page.getByRole("listitem").filter({ hasText: template });
-    await expect(row).toContainText("For frontend roles");
-    await expect(row).toContainText("No CV made from it yet");
+    await page.getByRole("button", { name: "Add Name" }).click();
+    const nameFrame = frame(page, /^Name, at 15 by 15 mm/);
+    await expect(nameFrame).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: /^Name On the page$/ })).toBeDisabled();
 
-    // Use it: the new CV form preselects it.
-    await row.getByRole("link", { name: "Use template" }).click();
-    await expect(page.getByRole("radio", { name: new RegExp(`^${template}`) })).toBeChecked();
-    const cvName = `From template ${unique()}`;
-    await page.getByRole("textbox", { name: "Name" }).fill(cvName);
-    await page.getByRole("button", { name: "Create and open" }).click();
-    await expect(page).toHaveURL(CV_URL);
-    const cvUrl = page.url();
-    await expect(preview(page)).toBeVisible();
-    await expect(sectionCount(page, "soft_skills")).toHaveCount(0);
-    await expect(sectionCount(page, "languages")).toHaveCount(1);
+    // The keyboard moves it: Shift for 5 mm.
+    await nameFrame.focus();
+    await page.keyboard.press("Shift+ArrowRight");
+    await expect(frame(page, /^Name, at 20 by 15 mm/)).toBeVisible();
+    await expect(field(page, "X")).toHaveValue("20");
 
-    // Editing the template later changes new CVs only.
-    await page.goto("/en/dashboard/templates");
-    await expect(row).toContainText("Used for 1 CV");
-    await row.getByRole("link", { name: new RegExp(template) }).click();
-    await expect(page).toHaveURL(TEMPLATE_URL);
-    await expect(page.getByRole("textbox", { name: "Template name" })).toHaveValue(template);
-    await outline(page).getByRole("button", { name: "Show “Languages” on the CV" }).click();
-    await expect(sectionCount(page, "languages")).toHaveCount(0);
+    // The mouse drags it down the page…
+    const box = await frame(page, /^Name, at/).boundingBox();
+    if (!box) throw new Error("The name has no box");
+    await drag(page, box, 0, 160);
+    await expect.poll(async () => Number(await field(page, "Y").inputValue())).toBeGreaterThan(40);
+
+    // …and the corner handle makes it wider.
+    const handle = canvas(page).locator('[data-handle="se"]');
+    const corner = await handle.boundingBox();
+    if (!corner) throw new Error("The resize handle has no box");
+    await drag(page, corner, 60, 0);
+    await expect
+      .poll(async () => Number(await field(page, "Width").inputValue()))
+      .toBeGreaterThan(130);
+
+    await page.getByRole("button", { name: "Add Work experience" }).click();
     await expectSaved(page);
-
-    await page.goto(cvUrl);
-    await expect(sectionCount(page, "languages")).toHaveCount(1);
-
-    // Deleting the template never touches the CV made from it.
-    await page.goto("/en/dashboard/templates");
-    await page.getByRole("button", { name: `More actions for ${template}` }).click();
-    await page.getByRole("menuitem", { name: "Delete" }).click();
-    const confirm = page.getByRole("alertdialog");
-    await expect(confirm).toContainText("The CV made from it stays exactly as it is.");
-    await confirm.getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByRole("link", { name: new RegExp(template) })).toHaveCount(0);
-
-    await page.goto("/en/dashboard/cvs");
-    await expect(page.getByRole("link", { name: new RegExp(cvName) })).toContainText(
-      `From “${template}”`,
-    );
-    await page.goto(cvUrl);
-    await expect(sectionCount(page, "soft_skills")).toHaveCount(0);
-    await expect(sectionCount(page, "languages")).toHaveCount(1);
+    await page.reload();
+    await expect(page.getByRole("textbox", { name: "Template name" })).toHaveValue(name);
+    await expect(frame(page, /^Name, at/)).toBeVisible();
+    await expect(frame(page, /^Work experience, at/)).toBeVisible();
+    // The live preview shows real career data.
+    await expect(canvas(page).getByText(SEED.fullName)).toBeVisible();
   });
 
-  test("replaces an existing template only after a warning", async ({ page }) => {
-    const template = `Template ${unique()}`;
-    await createCv(page, `First ${unique()}`);
-    await saveAsNewTemplate(page, template);
+  test("a CV made from a design is drawn by it, in print and in a PDF read in order", async ({
+    page,
+  }) => {
+    const name = `Layout ${unique()}`;
+    await createDesign(page, name);
+    // The name at the top, the experience below it: the reading order.
+    await page.getByRole("button", { name: "Add Name" }).click();
+    await page.getByRole("button", { name: "Add Work experience" }).click();
+    const id = await useForNewCv(page, name);
 
-    await createCv(page, `Second ${unique()}`);
-    await outline(page).getByRole("button", { name: "Show “Projects” on the CV" }).click();
-    const dialog = await openSaveAsTemplate(page);
-    await dialog.getByRole("radio", { name: /Replace a template/ }).check();
-    await dialog.getByRole("combobox", { name: "Template to replace" }).selectOption({
-      label: `${template} (English)`,
-    });
-    await expect(dialog).toContainText(
-      `“${template}” will get this CV’s sections, order, wording and language.`,
-    );
-    await dialog.getByRole("button", { name: "Replace template" }).click();
-    await expect(page.getByText(`Template “${template}” updated`)).toBeVisible();
+    await expect(
+      page.locator('article[data-visual-template="canvas-v1"]').filter({ visible: true }),
+    ).toBeVisible();
 
-    await page.goto("/en/dashboard/templates");
-    await page.getByRole("link", { name: new RegExp(template) }).click();
-    await expect(page).toHaveURL(TEMPLATE_URL);
-    await expect(sectionCount(page, "projects")).toHaveCount(0);
-    // Its own description stayed.
-    await expect(page.getByRole("textbox", { name: /Description/ })).toHaveValue(
-      "For frontend roles",
-    );
+    const response = await requestPdf(page, id);
+    expect(response.status()).toBe(200);
+    const text = await readPdfText(await response.body());
+    const positions = [SEED.fullName, SEED.experienceRoles.en].map((part) => text.indexOf(part));
+    expect(positions, text).not.toContain(-1);
+    expect(positions, text).toEqual([...positions].sort((a, b) => a - b));
   });
 
-  test("duplicates a template from its editor and deletes it with undo", async ({ page }) => {
-    const template = `Template ${unique()}`;
-    await createCv(page, `Source ${unique()}`);
-    await saveAsNewTemplate(page, template);
-    await page.goto("/en/dashboard/templates");
-    await page.getByRole("link", { name: new RegExp(template) }).click();
-    await expect(page).toHaveURL(TEMPLATE_URL);
+  test("text a design cuts off blocks the export until it fits", async ({ page }) => {
+    const name = `Cramped ${unique()}`;
+    await createDesign(page, name);
+    await page.getByRole("button", { name: "Add Work experience" }).click();
+    // A fixed box far too small for the seeded experience.
+    await page.getByRole("switch", { name: "Grow to fit the text" }).click();
+    await field(page, "Height").fill("6");
+    await expect(page.getByText(/Work experience: the text doesn’t fit its box/)).toBeVisible();
+    const id = await useForNewCv(page, name);
+
+    await expect(
+      page.getByText(/The design doesn’t fit this CV’s content in 1 place/),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Download PDF" }).click();
+    await expect(page.getByText(/Fix 1 layout problem before exporting/)).toBeVisible();
+
+    const response = await requestPdf(page, id);
+    expect(response.status()).toBe(409);
+    expect(await response.json()).toEqual({ error: "layout_issues", count: 1 });
+  });
+
+  test("duplicates a design from its editor and deletes it with undo", async ({ page }) => {
+    const name = `Copied ${unique()}`;
+    await createDesign(page, name);
+    await page.getByRole("button", { name: "Add Name" }).click();
+    await expectSaved(page);
 
     await page.getByRole("button", { name: "More actions" }).click();
     await page.getByRole("menuitem", { name: "Duplicate" }).click();
     await expect(page.getByRole("textbox", { name: "Template name" })).toHaveValue(
-      `Copy of ${template}`,
+      `Copy of ${name}`,
     );
+    await expect(frame(page, /^Name, at/)).toBeVisible();
 
     await page.getByRole("button", { name: "More actions" }).click();
     await page.getByRole("menuitem", { name: "Delete template" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete template" }).click();
     await expect(page).toHaveURL(/\/en\/dashboard\/templates$/);
-    await expect(page.getByRole("link", { name: new RegExp(`Copy of ${template}`) })).toHaveCount(
-      0,
-    );
+    await expect(page.getByRole("link", { name: new RegExp(`Copy of ${name}`) })).toHaveCount(0);
     await page.getByRole("button", { name: "Undo" }).click();
     await expect(page).toHaveURL(TEMPLATE_URL);
     await expect(page.getByRole("textbox", { name: "Template name" })).toHaveValue(
-      `Copy of ${template}`,
+      `Copy of ${name}`,
     );
   });
 
-  test("creates a template from Classic on the Templates page and shows its first page", async ({
+  test("CV setups saved as templates before designs existed are no longer offered", async ({
     page,
   }) => {
-    const template = `Created ${unique()}`;
-    await page.goto("/en/dashboard/templates");
-    // The built-in Classic is always offered, ready to use.
-    const included = page.getByRole("region", { name: "Included" });
-    await expect(included.getByRole("link", { name: "Use template" })).toHaveAttribute(
-      "href",
-      "/en/dashboard/cvs/new",
-    );
-    await expect(included.locator("article[data-visual-template]")).toHaveCount(1);
+    const legacy = `Legacy setup ${unique()}`;
+    const { url, publishableKey } = localSupabase();
+    const client = createClient<Database>(url, publishableKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error: signInError } = await client.auth.signInWithPassword(E2E_BUILDER);
+    if (signInError) throw signInError;
+    const { error } = await client
+      .from("cv_templates")
+      .insert({ name: legacy, locale: "en", definition: { schemaVersion: 1 } });
+    if (error) throw error;
 
-    await page.getByRole("link", { name: "Create a template" }).first().click();
-    await expect(page).toHaveURL(/\/en\/dashboard\/templates\/new$/);
-    await expect(page.getByRole("radio", { name: /^Classic/ })).toBeChecked();
-    await page.getByRole("textbox", { name: "Template name" }).fill(template);
-    await page.getByRole("button", { name: "Create and edit" }).click();
-
-    // It opens in the editor, with every section of the career data.
-    await expect(page).toHaveURL(TEMPLATE_URL);
-    await expect(page.getByRole("textbox", { name: "Template name" })).toHaveValue(template);
-    await expect(sectionCount(page, "experience")).toHaveCount(1);
-
-    // The gallery shows it with a picture of its first page, which is not interactive.
-    await page.goto("/en/dashboard/templates");
-    const card = page
-      .getByRole("region", { name: "Your templates" })
-      .getByRole("listitem")
-      .filter({ hasText: template });
-    await expect(card.locator("[inert] article[data-visual-template]")).toHaveCount(1);
-    await card.getByRole("link", { name: new RegExp(template) }).click();
-    await expect(page).toHaveURL(TEMPLATE_URL);
+    try {
+      await page.goto("/en/dashboard/templates");
+      await expect(page.getByRole("heading", { level: 1, name: "Templates" })).toBeVisible();
+      await expect(page.getByText(legacy)).toHaveCount(0);
+      await page.goto("/en/dashboard/cvs/new");
+      await expect(page.getByRole("radio", { name: /^Classic/ })).toBeChecked();
+      await expect(page.getByRole("radio", { name: new RegExp(legacy) })).toHaveCount(0);
+    } finally {
+      await client.from("cv_templates").delete().eq("name", legacy);
+    }
   });
 
-  test("another owner can neither open nor use the template", async ({ page, browser }) => {
-    const template = `Template ${unique()}`;
-    await createCv(page, `Private ${unique()}`);
-    await saveAsNewTemplate(page, template);
-    await page.goto("/en/dashboard/templates");
-    await page.getByRole("link", { name: new RegExp(template) }).click();
-    await expect(page).toHaveURL(TEMPLATE_URL);
+  test("another owner can neither open nor use the design", async ({ page, browser }) => {
+    const name = `Private ${unique()}`;
+    await createDesign(page, name);
+    await expectSaved(page);
     const url = page.url();
     const id = url.split("/").at(-1) ?? "";
 
@@ -214,34 +221,26 @@ test.describe("saved templates", () => {
     const stranger = await strangerContext.newPage();
     await stranger.goto(url);
     await expect(stranger.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
-
-    // A foreign id in the link preselects nothing: the stranger starts from their own data.
+    // A foreign id in the link preselects nothing.
     await stranger.goto(`/en/dashboard/cvs/new?template=${id}`);
-    await expect(stranger.getByRole("radio", { name: new RegExp(template) })).toHaveCount(0);
+    await expect(stranger.getByRole("radio", { name: new RegExp(name) })).toHaveCount(0);
     await strangerContext.close();
 
     await page.goto("/en/dashboard/templates/not-a-uuid");
     await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
   });
 
-  test("template pages meet WCAG 2.2 AA (serious and critical)", async ({ page }) => {
-    const template = `Template ${unique()}`;
-    await createCv(page, `A11y ${unique()}`);
-    await saveAsNewTemplate(page, template);
+  test("the gallery and the designer meet WCAG 2.2 AA (serious and critical)", async ({ page }) => {
+    const name = `A11y ${unique()}`;
+    await createDesign(page, name);
+    await page.getByRole("button", { name: "Add Name" }).click();
+    await page.getByRole("button", { name: "Add Work experience" }).click();
+    await expectSaved(page);
 
     for (const check of [
-      async () => {
-        await openSaveAsTemplate(page);
-      },
+      async () => undefined,
       async () => page.goto("/en/dashboard/templates"),
-      async () => {
-        await page.getByRole("link", { name: new RegExp(template) }).click();
-        await expect(page).toHaveURL(TEMPLATE_URL);
-        await expect(page.getByRole("textbox", { name: "Template name" })).toHaveValue(template);
-        await expect(page).toHaveTitle(new RegExp(template));
-      },
       async () => page.goto("/fr/dashboard/cvs/new"),
-      async () => page.goto("/fr/dashboard/templates/new"),
     ]) {
       await check();
       const results = await new AxeBuilder({ page })
