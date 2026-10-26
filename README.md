@@ -2,7 +2,7 @@
 
 > **Your career information, organized once. Your CV, customized any time.**
 
-**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus template designs (a free-form A4 designer) and print/PDF download. PDF download is verified locally and in production on Vercel; hardening is in progress. See [Development and setup](#development-and-setup).
+**Status:** Phases 1–4 implemented (foundation, owner authentication and database, career data, CV Builder with live A4 preview), plus template designs (a free-form A4 designer) and print/PDF download, verified locally and in production on Vercel. AI phase: the job-post match score and CVs tailored to a job post are built. Hardening is in progress. To run your own copy, see [Getting started](#getting-started).
 
 ## Overview
 
@@ -18,6 +18,183 @@ CVStudio is a **private, owner/admin-managed CV generator**. Instead of repeated
 - **Two languages.** Full admin interface and CV output in French and English.
 - **Fast and accessible.** Modern, mobile-first dashboard with clear loading, empty, error, and success feedback.
 - **Private by default.** An authenticated owner controls all information and exports.
+
+## Getting started
+
+How to run your own CVStudio: install it, create its Supabase database, create the owner (admin) account, load demo data, turn on AI with Groq, and deploy. CVStudio serves **one owner**: there is no public sign-up, and only the account you allowlist can use the workspace.
+
+Choose where the database runs. Both options use the same migrations (`supabase/migrations`), so you can start locally and add a hosted project when you deploy.
+
+| | Option A: local stack | Option B: hosted Supabase project |
+| --- | --- | --- |
+| Good for | Development, trying the app with demo data, the database and end-to-end tests | A deployed instance, or development without Docker |
+| Needs | Docker Desktop, running | A free [Supabase](https://supabase.com) account |
+| Owner account | `pnpm db:seed`, one command | The Supabase dashboard and one SQL statement |
+
+### 1. Prerequisites
+
+- **Node.js** `^22.12` or `>=24` (developed on 24).
+- **pnpm** `10.30.3`, the version pinned in `package.json`: `npm install -g pnpm@10.30.3`, or `corepack enable` with a Node.js that still ships Corepack (Node 24 does), which then uses the pinned version.
+- **Git**, and **Docker Desktop** for option A. The Supabase CLI is a project dependency: run it with `pnpm exec supabase …`, no separate install.
+- Optional accounts: [Groq](https://console.groq.com) for the AI features, [Vercel](https://vercel.com) to deploy.
+
+### 2. Install
+
+```bash
+git clone <repository-url> cvstudio
+cd cvstudio
+pnpm install
+cp .env.example .env.local   # works in PowerShell too
+```
+
+`.env.local` holds your settings and keys. Git ignores it: never commit it. Every variable is described in [Environment variables](#environment-variables).
+
+### 3. Set up the database
+
+#### Option A: local stack (Docker)
+
+```bash
+pnpm db:start   # Postgres, Auth, Storage and the API in Docker, with every migration applied
+pnpm db:seed    # the owner account, allowlisted, with a demo career
+```
+
+`pnpm db:seed` ends by printing the two values the app needs. `.env.example` already holds the local URL; replace the placeholder key with the printed one (`pnpm exec supabase status` shows both again at any time):
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…
+```
+
+What `pnpm db:seed` does (`scripts/seed-local.mjs`):
+
+- **Owner account:** creates `owner@example.com` with the password `Owner-Pass-2026`, already confirmed, and adds it to the allowlist (`public.app_owners`), which also creates its empty profile. Choose your own with `pnpm db:seed --email you@example.com --password Your-Pass-2026`: at least 12 characters, with lowercase, uppercase and digits (the password rules in `supabase/config.toml`).
+- **Demo career:** a made-up person, *Camille Example*, written in English and French: profile and links, 6 skill groups, 2 experiences, 2 education entries, 3 projects, a certification, soft skills and languages. It goes through the same database functions as the dashboard, signed in as the owner, so the same checks apply. `--account-only` skips it and leaves the workspace empty.
+- **Safe to repeat:** another run sets the account's password again (the default, or the one given) and never touches a workspace that already has career data.
+- **Local only:** it refuses any Supabase that is not on this machine, so its well-known default password never reaches a hosted project.
+
+Day to day:
+
+- `pnpm db:stop` stops the stack and keeps its data; `pnpm db:start` brings it back.
+- After pulling new migrations, `pnpm exec supabase migration up --local` applies them and keeps your data. `pnpm db:reset` rebuilds the database from scratch and **erases it**; run `pnpm db:seed` again afterwards.
+- `pnpm db:start` leaves out Supabase Studio to save memory. To get Studio (http://127.0.0.1:54323), run `pnpm db:stop`, then `pnpm exec supabase start`.
+
+#### Option B: hosted Supabase project
+
+**Create the project and its tables**
+
+1. In the [Supabase dashboard](https://supabase.com/dashboard), select **New project**. Choose a strong database password and keep it (linking asks for it), and the region nearest to where the app will run (see [Deploy to Vercel](#6-deploy-to-vercel-optional)).
+2. Link this folder to the project and apply the migrations. The project ref is the id in the dashboard address (`supabase.com/dashboard/project/<project-ref>`), also listed under **Settings → General**.
+
+   ```bash
+   pnpm exec supabase login                              # signs in through the browser
+   pnpm exec supabase link --project-ref <project-ref>   # asks for the database password
+   pnpm exec supabase db push --dry-run                  # lists the migrations to apply
+   pnpm exec supabase db push                            # applies them
+   ```
+
+   `db push` creates the tables, the Row Level Security policies and the private storage bucket; it loads no data. Run it again whenever new migrations arrive, before deploying the code that needs them.
+
+**Lock down sign-in** (the same rules as `supabase/config.toml`)
+
+3. **Authentication → Sign In / Providers:** turn **off** *Allow new users to sign up*, and keep the **Email** provider on.
+4. **Authentication → Sign In / Providers → Email:** minimum password length **12**, requiring lowercase, uppercase letters and digits.
+
+**Create the owner (admin) account**
+
+5. **Authentication → Users → Add user → Create new user:** your email and a strong password, with **Auto Confirm User** ticked. Keep the password in a password manager: the app has no password-reset page.
+6. **SQL Editor:** add the account to the allowlist, which also creates its empty profile.
+
+   ```sql
+   insert into public.app_owners (user_id)
+   select id from auth.users where email = 'you@example.com';
+
+   -- Check: lists the allowlisted accounts.
+   select u.email from public.app_owners o join auth.users u on u.id = o.user_id;
+   ```
+
+   Any other account that signs in is signed straight back out, and Row Level Security hides every row from it anyway.
+
+**Connect the app**
+
+7. In `.env.local`, set the project URL and its **publishable** key. Both are in the project's **Connect** dialog; the key is also under **Settings → API Keys**.
+
+   ```dotenv
+   NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…
+   ```
+
+   Never put a secret key (`sb_secret_…`) or the legacy `service_role` key here: `NEXT_PUBLIC_` values reach the browser, and the app rejects them.
+
+A hosted workspace starts empty: sign in and fill in **Career data**. Demo data stays on the local stack (`pnpm db:seed` is local-only on purpose).
+
+### 4. Run the app
+
+```bash
+pnpm dev
+```
+
+Open http://localhost:3000 (it redirects to `/en` or `/fr`) and sign in with the owner account. Next.js reads `.env.local` only when it starts: restart `pnpm dev` after editing it.
+
+A first tour: **Career data** holds the master records. **New CV** asks for a template (*Classic* or one of yours), a language and what goes in, then lets you pick, hide and reorder everything next to a live A4 preview; **Print** and **Download PDF** export it. **Templates** → *Create a template* opens the A4 designer. **Job match** compares a pasted job post with your CVs.
+
+**Download PDF** needs a Chromium-based browser on the server. Locally, that is Playwright's Chromium when installed (`pnpm exec playwright install chromium`), otherwise your Chrome or Edge; `PDF_CHROMIUM_PATH` points it at another binary. On Vercel, a packaged Chromium is used.
+
+Before a pull request, run `pnpm check` (format, lint, types, unit tests) and, with the local stack running, `pnpm test:db` and `pnpm test:e2e`; see [Scripts](#scripts-all-verified).
+
+### 5. AI features with Groq (optional)
+
+AI reads a job post once (you review and correct the requirements it lists) and chooses what a CV tailored to a job shows. The match score itself never calls AI, and each AI step has a manual alternative. Groq answers first; Google Gemini is an optional fallback. The keys stay on the server.
+
+**Create a Groq API key**
+
+1. Sign in at [console.groq.com](https://console.groq.com). The free plan is enough to start.
+2. Open **API Keys** ([console.groq.com/keys](https://console.groq.com/keys)) → **Create API Key**. Name it after the environment (for example `cvstudio-local`) and copy it at once: it starts with `gsk_` and is shown only once. Use one key per environment, so that each can be revoked on its own.
+3. Recommended: in **Settings → Data Controls** ([console.groq.com/settings/data-controls](https://console.groq.com/settings/data-controls)), an organization admin can turn on **Zero Data Retention**. Groq's terms forbid training on what you send, and it keeps no copy of requests by default, apart from logs held for up to 30 days to troubleshoot or investigate abuse; Zero Data Retention stops those too.
+
+**Set it up in the project**
+
+4. Add the key to `.env.local`, then restart `pnpm dev`. These variables are server-only: never prefix them with `NEXT_PUBLIC_`.
+
+   ```dotenv
+   AI_PRIMARY_PROVIDER=groq
+   GROQ_API_KEY=gsk_…
+   # Optional, default openai/gpt-oss-20b. Another model must support strict
+   # structured outputs on Groq, for example openai/gpt-oss-120b.
+   # GROQ_MODEL=openai/gpt-oss-20b
+   ```
+
+5. **Turn AI on.** It stays off until the owner enables it. Open **Settings → AI features**: the primary provider should read *Ready · openai/gpt-oss-20b*, or the panel says what is missing. Tick **Use AI for job posts and CVs**, change the **Daily limit** if you like (10 requests a day by default, from 1 to 50; failed requests count too, and the count resets at midnight UTC), then **Save AI settings**.
+6. **Try it.** **Job match → Add a job post**: paste the ad, choose **Analyze with AI**, correct the requirements and save; the job page then scores every CV. **New CV → Tailored to a job post**: paste or pick a post, and review what the AI chose (two projects, the skills shown, a suggested title) before **Create and open**. Without AI, *Enter requirements myself* and *Choose by keywords* do the same by hand.
+
+**Optional: Gemini as the fallback.** Gemini answers only when Groq is unavailable: a timeout, a rate limit, a request too large for your Groq plan, an outage. Create a key in [Google AI Studio](https://aistudio.google.com/apikey) in a Google Cloud project **with billing enabled** (on the free tier, Google may use what you send to improve its products, and its terms forbid personal data there), set it as `GEMINI_API_KEY`, and add a budget alert in Google Cloud Billing. `AI_PRIMARY_PROVIDER=gemini` puts Gemini first.
+
+**No key yet?** `AI_FAKE_PROVIDER=1` in `.env.local` answers with deterministic test data instead of calling Groq or Gemini (Settings shows *Test provider*), so every AI screen can be tried offline. It works locally only; Vercel ignores it.
+
+**What is sent:** reading a job post sends only the pasted text. Tailoring sends the job's requirements and your projects and skills (titles, short descriptions, technologies), never your name, contacts, photo or links. Settings lists today's usage, the latest requests and an estimated monthly cost (for models with a known price; a free-plan Groq key is not billed). How it all works: [Job posts and the ATS match score](#job-posts-and-the-ats-match-score-ai-phase-step-1).
+
+### 6. Deploy to Vercel (optional)
+
+1. Push the repository to GitHub. In Vercel, choose **Add New → Project** and import it: Next.js and pnpm are detected, so keep the default build settings.
+2. **Settings → Environment Variables**, for **Production**: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` of the hosted project, `APP_TIME_ZONE` (for example `Europe/Paris`) and, for AI, `AI_PRIMARY_PROVIDER` and `GROQ_API_KEY` (plus `GROQ_MODEL` or `GEMINI_API_KEY` if you use them), with the keys marked **Sensitive**. Point **Preview** deployments at a development project, never at production data. Never set `AI_FAKE_PROVIDER` or `GOOGLE_GENAI_DEBUG`.
+3. **Region:** `vercel.json` runs the functions in Dublin (`dub1`), next to a Supabase project in Ireland or London. Change `regions` to the Vercel region nearest your Supabase project: every page reads the database several times.
+4. Deploy. Changed variables only reach new deployments, so redeploy after editing them.
+
+Before going live, work through the [Production checklist](#production-checklist). [Continuous integration and deployment](#continuous-integration-and-deployment) covers CI, deployment checks and the manual migrations workflow.
+
+### Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| *Supabase is not configured* on the sign-in page | Add the URL and publishable key to `.env.local`, then restart `pnpm dev` |
+| *Email or password is incorrect* | Locally, `pnpm db:seed --email you@example.com --password Your-Pass-2026` sets a new password. Hosted: check the account under **Authentication → Users** |
+| *This account is not allowed to use this workspace* | The account is not allowlisted: step 6 of option B (`pnpm db:seed` does it locally) |
+| *Local Supabase is not running* | Start Docker Desktop, then `pnpm db:start` |
+| Windows: `pnpm db:start` fails with *bind: An attempt was made to access a socket in a way forbidden* | Windows has reserved those ports (`netsh interface ipv4 show excludedportrange protocol=tcp`). In an administrator terminal, run `net stop winnat`, then `net start winnat`, and start again |
+| **Settings → AI features** shows *Not set up* | The panel names the problem (missing or malformed key, invalid model). Fix `.env.local` and restart `pnpm dev`, or fix the Vercel variable and redeploy |
+| *AI is off. Turn it on in Settings…* | **Settings → AI features** → tick *Use AI for job posts and CVs* → **Save AI settings** |
+| *You’ve used today’s AI requests* | The daily limit is reached: wait until midnight UTC, or raise the limit in Settings (up to 50) |
+| **Download PDF** fails locally | Install a browser for it: `pnpm exec playwright install chromium`, or Chrome or Edge |
+| `EBUSY` or `EPERM` errors, or a `.next` folder that cannot be deleted, inside OneDrive | `pnpm clean`; better, keep the project outside synced folders |
 
 ## Reference CV and visual direction
 
@@ -251,63 +428,22 @@ CVs contain private personal information. Security is mandatory:
 
 ## Development and setup
 
-**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing), on Vercel too. Templates are page designs: a free-form A4 designer (start from a blank page; add, drag, resize and style elements with snapping guides, keyboard moves, undo/redo and autosave; layout checks), a gallery with how many CVs came from each, duplicate, delete with undo, and new CVs drawn by a design in the preview, print and PDF (see *Template designs*). Hardening follows; see the roadmap below. AI phase, step 1 is implemented: job posts with owner-reviewed requirements (typed, or read by AI: Groq, with Gemini as the fallback) and a deterministic ATS match score for every CV (see *Job posts and the ATS match score*). Step 2 too: new CVs tailored to a job post, where the AI picks two projects, the skills to show and a title the owner reviews before the CV exists (see *CVs tailored to a job post*).
+**Implemented:** Phase 1 (locale routing, dashboard shell, design system, overview), Phase 2 (owner authentication, reviewed migrations with RLS, private storage, authorization tests), Phase 3 (career data: profile and photo, technical skills, experience, education, projects, certifications, soft skills, languages and custom sections; bilingual fields with a "same in both languages" option; ordering, archiving and atomic saves) and Phase 4 (CV Builder: create, rename, duplicate, delete with undo; per-CV language; section, entry, achievement, skill and link selection, order and visibility; per-CV wording; live `classic-reference-v1` A4 preview; missing-translation and archived-record checks; autosave with conflict detection; undo/redo; phone edit/preview switch). Print and PDF download also work locally (a print-only A4 page, and a server-rendered PDF with selectable text, live links and ATS-friendly reading order, blocked while translations are missing), on Vercel too. Templates are page designs: a free-form A4 designer (start from a blank page; add, drag, resize and style elements with snapping guides, keyboard moves, undo/redo and autosave; layout checks), a gallery with how many CVs came from each, duplicate, delete with undo, and new CVs drawn by a design in the preview, print and PDF (see *Template designs*). Hardening follows; see the roadmap below. AI phase, step 1 is implemented: job posts with owner-reviewed requirements (typed, or read by AI: Groq, with Gemini as the fallback) and a deterministic ATS match score for every CV (see *Job posts and the ATS match score*).
 
-### Prerequisites
+To set up a copy from a fresh clone (database, owner account, demo data, AI, deployment), follow [Getting started](#getting-started). The sections below are the reference.
 
-- Node.js `^22.12` or `>=24` (developed on 24.21).
-- pnpm `10.30.3`. The version is pinned in `package.json`; `corepack enable` selects it automatically.
-- Docker, for the local Supabase stack used by development, database tests and end-to-end tests.
-- A **development** Supabase project for shared/hosted use. Never point development at production data.
+### Environment variables
 
-### First run (local stack)
-
-```bash
-pnpm install
-pnpm db:start                # local Postgres, Auth and Storage in Docker; applies supabase/migrations
-pnpm exec supabase status    # shows the local API URL and publishable key
-cp .env.example .env.local   # put the local URL and publishable key in .env.local
-pnpm dev                     # http://localhost:3000 → /en or /fr → login
-```
-
-The app has **no public sign-up**. Create the owner with the Supabase admin API or the local Studio, then allowlist it (see *Owner provisioning*).
-
-### Connecting a hosted Supabase project
-
-Run these yourself: they need your Supabase login and database password.
-
-```bash
-pnpm exec supabase login
-pnpm exec supabase link --project-ref <your-project-ref>
-pnpm exec supabase db push   # applies the reviewed migrations in supabase/migrations
-```
-
-Then, in the Supabase dashboard:
-
-1. **Authentication → Sign In / Providers**: turn **off** "Allow new users to sign up"; keep the Email provider on.
-2. **Authentication → Passwords**: minimum length 12, requiring lowercase, uppercase and digits (mirrors `supabase/config.toml`).
-3. **Authentication → Users → Add user**: create the owner account with a strong password ("Auto Confirm User").
-
-### Owner provisioning
-
-An account can sign in only when it is on the allowlist. In the SQL editor (or `psql` locally):
-
-```sql
-insert into public.app_owners (user_id)
-select id from auth.users where email = 'owner@example.com';
-```
-
-A trigger creates the owner's empty profile automatically. A signed-in account that is not allowlisted is signed straight back out and sees no data (enforced by RLS on every table and on Storage).
-
-Environment variables (see `.env.example`):
+`.env.example` is the template for `.env.local`. Next.js reads these variables when it starts; on Vercel, set them per environment, then redeploy.
 
 | Variable | Exposure | Purpose |
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Browser-safe | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser-safe | Publishable key; the app refuses `sb_secret_…` or `service_role` keys here |
 | `APP_TIME_ZONE` | Server only | IANA zone used to display timestamps (default `UTC`) |
+| `PDF_CHROMIUM_PATH` | Server only, optional | Browser binary for PDF export outside Vercel. Unset: Playwright's Chromium, then the installed Chrome or Edge |
 | `AI_PRIMARY_PROVIDER` | Server only | `groq` (default) or `gemini`: which provider answers first; the other is the fallback. Any other value turns AI off and Settings says why |
-| `GROQ_API_KEY` | Server only | Groq API key for job-post analysis; never prefix it with `NEXT_PUBLIC_` |
+| `GROQ_API_KEY` | Server only | Groq API key for the AI features (job-post analysis, tailored CVs); never prefix it with `NEXT_PUBLIC_` |
 | `GROQ_MODEL` | Server only | Groq model (default `openai/gpt-oss-20b`); it must support strict structured outputs |
 | `GEMINI_API_KEY` | Server only | Gemini API key, the fallback; never prefix it with `NEXT_PUBLIC_`. Without either key, AI is shown as not set up |
 | `AI_FAKE_PROVIDER` | Server only, local and CI | `1` answers AI requests with deterministic fakes instead of Groq and Gemini (used by the e2e suite). Ignored on Vercel |
@@ -328,6 +464,7 @@ Environment variables (see `.env.example`):
 | `pnpm test:e2e` | Playwright on desktop and mobile Chromium against a fresh production build wired to the local stack (login flows, navigation, career data, CV builder, cross-owner access, axe WCAG 2.2 AA). A second allowlisted test owner with a seeded, generic career profile isolates the builder flows. First run: `pnpm exec playwright install chromium` |
 | `pnpm check` | format check, lint, typecheck and unit tests |
 | `pnpm db:start` / `db:stop` / `db:reset` | Local Supabase stack lifecycle (`db:reset` re-applies all migrations) |
+| `pnpm db:seed` | **Local** stack only: creates or resets the owner account (default `owner@example.com` / `Owner-Pass-2026`), allowlists it and loads a generic bilingual demo career into an empty workspace. Options `--email`, `--password`, `--account-only` |
 | `pnpm db:types` | Regenerates `src/lib/supabase/database.types.ts` from the local schema |
 | `pnpm clean` | Removes `.next` (also works when OneDrive has turned it into read-only placeholders) |
 
@@ -379,6 +516,7 @@ supabase/
   config.toml              # local stack: sign-ups disabled, strong passwords
   migrations/              # reviewed schema, RLS, storage (applied by db:start / db push)
 tests/{unit,db,e2e}/
+scripts/                   # db:seed (local owner + demo career), clean, coverage summary, PDF bundle check
 .github/                   # CI, manual database migrations, shared setup action, Dependabot
 docs/                      # specifications; docs/reference-cvs/ is gitignored (personal data)
 DESIGN.md                  # dashboard design system ("Swiss grid")
@@ -438,11 +576,7 @@ weight = 2 for a required item, 1 for a nice-to-have
 - **Time and retries:** 30 seconds for the whole request. While Gemini waits behind it, Groq gets at most 12 seconds; the fallback gets the rest, and is not started with less than 8 seconds left. Each provider retries rate-limit, server and network errors at most twice, after the provider's `Retry-After` or an exponential backoff; timeouts are never retried.
 - **Answers** from either provider are validated with the same Zod schema and normalized by the same code into the same draft. The job post is wrapped in tags it cannot close, and the instructions treat it as data. AI is off until the owner turns it on in **Settings**, where the daily limit is set (10 by default, 1–50). `begin_ai_request()` enforces the switch, one request at a time and the daily quota (every request started since midnight UTC, failed ones included) in Postgres under a per-owner advisory lock, so parallel server instances cannot exceed it. An analysis is one request however many providers it tries: one row in `ai_requests` and one unit of the daily quota. `ai_request_attempts` records each provider tried (provider, model, outcome, HTTP status, retries, token counts, estimated cost, duration), and `ai_requests` names the provider and model that answered. Both hold metadata only, never the post or the answer. Settings shows the primary and fallback providers and why one is not set up, the model of the last analysis, today's usage, the month's estimated cost (at list prices; Groq's free plan bills nothing) and the latest requests with the providers they tried. Failures are logged as one JSON line with codes and counts only.
 
-**Setup:**
-
-1. Create a Groq API key at console.groq.com and, in its **Data Controls**, turn on Zero Data Retention (Groq's terms forbid training on what you send, but by default it may keep logs for up to 30 days). Set `GROQ_API_KEY` (and `GROQ_MODEL` if not the default) as server-only variables in Vercel and `.env.local`.
-2. For the fallback, create a Gemini API key in a Google Cloud project **with billing enabled** (on the free tier Google may use what you send to improve its products, and its terms forbid personal data there), set `GEMINI_API_KEY` the same way, and set a budget alert in Google Cloud Billing.
-3. Apply `supabase/migrations/20261023100000_ai_job_posts.sql`, then `supabase/migrations/20261023130000_ai_provider_attempts.sql`.
+**Setup:** keys, the Settings switch and the privacy options are in [Getting started → AI features with Groq](#5-ai-features-with-groq-optional). A deployment that predates this step applies `supabase/migrations/20261023100000_ai_job_posts.sql`, then `supabase/migrations/20261023130000_ai_provider_attempts.sql`, before the code.
 
 ### CVs tailored to a job post (AI phase, step 2)
 
@@ -473,7 +607,7 @@ Settings that live outside the repository; check them once per environment.
 
 - **Supabase → Authentication:** sign-ups off; minimum password length 12 with lower/upper case and digits (mirrors `supabase/config.toml`); only the owner in `app_owners`.
 - **Supabase → Storage:** the `cvstudio-assets` bucket stays private (the migration creates it that way).
-- **Vercel:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `APP_TIME_ZONE` set for Production. Functions run in Dublin (`dub1`, `vercel.json`) next to the Supabase project (Ireland/London); keep the two in the same area, since every page reads the database several times.
+- **Vercel:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `APP_TIME_ZONE` set for Production; with AI, `AI_PRIMARY_PROVIDER` and `GROQ_API_KEY` (and `GEMINI_API_KEY` for the fallback) as Sensitive variables, and `AI_FAKE_PROVIDER` and `GOOGLE_GENAI_DEBUG` unset. Functions run in Dublin (`dub1`, `vercel.json`) next to the Supabase project (Ireland/London); keep the two in the same area, since every page reads the database several times.
 - **Cloudflare (if it proxies the domain):** PDF export makes Vercel's servers open the CV's print page (`/{locale}/print/{id}`) through the public domain, so firewall rules must not challenge those requests.
 - **PDF export logs** (Vercel → Logs): a success logs `PDF export` with its duration and size. A failure logs `PDF export failed` with one JSON object: the `stage` that failed (`load-engine`, `launch`, `open-page`, `navigate`, `ready` or `print`), the `reason`, the original `error` with its stack, the `origin` the print page was loaded from and how many session cookies were passed. Messages are redacted: no cookie values, tokens, signed-URL queries, record ids or CV content.
 
@@ -485,8 +619,7 @@ Settings that live outside the repository; check them once per environment.
 
 ### Remaining setup steps (later phases)
 
-1. PDF download in production: deploy the fix for the `browsers.json` file missing from the PDF function (see *Production checklist* for the log lines to check).
-2. CI/CD: the Vercel Deployment Check, the `main` ruleset and the `production` environment (see *Continuous integration and deployment*).
+CI/CD: the Vercel Deployment Check, the `main` ruleset and the `production` environment (see *Continuous integration and deployment*).
 
 Useful official resources: [Next.js docs](https://nextjs.org/docs), [Supabase docs](https://supabase.com/docs), [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [shadcn/ui](https://ui.shadcn.com/), [Tailwind CSS](https://tailwindcss.com/docs).
 

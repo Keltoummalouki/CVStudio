@@ -1,7 +1,7 @@
 # CLAUDE.md — CVStudio
 
 > Coding-agent operating instructions. Read this file and `README.md` before planning or changing code.
-> Status: **Phases 1–4 implemented** (foundation, owner auth + RLS migrations, career-data CRUD, CV Builder with live A4 preview), plus saved templates (presets, copy-on-apply) and print/PDF download, verified locally and in production on Vercel. Hardening is in progress. AI phase (§16), step 1: job posts and the ATS match score are implemented (PR 1), with Groq as the primary provider and Gemini as the fallback (2026-10-23); the Job Match panel in the CV Builder (PR 2) is next.
+> Status: **Phases 1–4 implemented** (foundation, owner auth + RLS migrations, career-data CRUD, CV Builder with live A4 preview), plus templates as owner-made page designs (free-form A4 designer, copy-on-apply; approved 2026-10-23) and print/PDF download, verified locally and in production on Vercel. Hardening is in progress. AI phase (§16), step 1: job posts and the ATS match score are implemented (PR 1), with Groq as the primary provider and Gemini as the fallback (2026-10-23); step 2, CVs tailored to a job post, is implemented (2026-10-26); the Job Match panel in the CV Builder (step 1, PR 2) is still to come.
 
 ## 1. Product mission
 
@@ -14,7 +14,7 @@ The owner maintains structured career data once in Supabase, then composes Frenc
 ## 2. Non-negotiable priorities (in order)
 
 1. **Excellent UX and UI:** mobile-first admin experience; efficient flows; accessible controls; polished, coherent visuals; no confusing editor behavior.
-2. **Fidelity to the supplied CV references:** the first print design (`classic-reference-v1`) should closely follow the user's existing French/English PDFs, not an invented layout.
+2. **Fidelity to the supplied CV references:** the included Classic design (`classic-reference-v1`) should closely follow the user's existing French/English PDFs (designs the owner makes in the designer are their own layouts), not an invented layout.
 3. **Content flexibility:** add/edit/delete/reorder/show/hide sections, subsections, entries, fields, and supported custom content blocks.
 4. **Reliable printing and PDF output:** same CV content and styles for preview, print, and download; sensible page breaks.
 5. **Security and privacy:** one authorized owner/admin; server-side authorization; owner-scoped RLS on all exposed tables and storage.
@@ -61,7 +61,7 @@ Important: one-page output is preferred when content fits, **not** a forced limi
 - Per-CV inclusion of records and optional text overrides without modifying canonical records.
 - Live, paper-shaped preview, desktop editing workspace, useful mobile editing experience.
 - Save CV drafts/documents, duplicate them, edit or delete them.
-- Save a **reusable CV template/preset** from a current CV; list, create, edit, duplicate, apply, and delete saved presets.
+- **Templates are owner-made page designs** (approved 2026-10-23): a free-form designer that starts from a blank A4 page, where the owner adds, drags, resizes and styles elements; list, create, edit, duplicate, apply, and delete them. CV setups saved with the former *Save as template* are retired: rows kept, never listed or offered.
 - Print CV and download a real PDF; A4; reliable pagination.
 - Confirmation/undo patterns for destructive actions; loading, empty, saved, unsaved, error, and success states.
 - Secure photo upload/optional visibility.
@@ -72,7 +72,7 @@ Important: one-page output is preferred when content fits, **not** a forced limi
 - AI features beyond the approved AI phase (§16), such as cover letters, AI-judged scores, importing job posts from URLs, or any unreviewed writing or translation.
 - Public sign-up or multi-tenant SaaS billing.
 - Public CV-sharing URLs and uncontrolled public personal-data access.
-- Dozens of visual themes. Ship **one reference-based design** first; saved presets are distinct from visual themes.
+- Built-in visual themes beyond Classic. Other looks come from the owner's own designs.
 - PDF-to-data extraction/import from the supplied CVs.
 
 If a request would expand scope, describe the trade-off and wait for owner approval.
@@ -81,13 +81,13 @@ If a request would expand scope, describe the trade-off and wait for owner appro
 
 - **Master data:** owner-maintained career records (experience, skills, projects, etc.) stored in Supabase.
 - **CV document:** a saved, editable CV composition with locale, chosen records, order, visibility, and overrides. Can be printed/exported.
-- **Saved CV template / preset:** a reusable configuration created from a document. Applying a preset **copies** its configuration into a new CV, rather than mutating an existing document or linking edits destructively.
-- **Visual template:** the actual document styling/layout renderer, initially `classic-reference-v1`.
+- **Template:** an owner-made page design (`design` JSON, `src/features/cv-design/design.ts`): where elements sit on A4 pages and how they look. It holds no career data. Applying a template **copies** its design into a new CV, rather than mutating an existing document or linking edits destructively.
+- **Visual template:** the actual document renderer: `classic-reference-v1` (Classic, the reference layout) or `canvas-v1` (draws a design).
 - **Section:** top-level content area (e.g., Experience).
 - **Subsection:** nested logical group (e.g., Frameworks & APIs under Technical Skills; Technologies under Experience).
 - **Item:** an individual entry or bullet, selected and optionally hidden/reordered.
 
-Deletion of a saved preset must not delete CV documents previously created from it. Deletion of a canonical record referenced by a CV must be handled predictably (e.g., soft-delete and warning, or a clearly specified snapshot policy). Avoid dangling references and silent data loss.
+Deletion of a template must not delete CV documents previously created from it. Deletion of a canonical record referenced by a CV must be handled predictably (e.g., soft-delete and warning, or a clearly specified snapshot policy). Avoid dangling references and silent data loss.
 
 ## 6. Agreed technical foundation
 
@@ -170,9 +170,9 @@ Prefer canonical entity tables with `owner_id` and stable UUIDs:
 - `soft_skills`
 - `custom_sections` (with subsection/item structures)
 - `cv_documents`
-- `cv_templates`
+- `cv_templates` (owner-made designs: a versioned, Zod-validated `design` JSONB; a CV made from one keeps its own copy in `cv_documents.design`)
 
-CV compositions and presets may hold a **versioned, validated JSONB definition** for ordering, visibility, selections, and overrides. Define a strict Zod schema with stable node IDs, `schema_version`, and discriminated node types; do not persist arbitrary unvalidated JSON. Separate canonical relational data from composition state. Document deletion and migration semantics.
+CV compositions hold a **versioned, validated JSONB definition** for ordering, visibility, selections, and overrides. Define a strict Zod schema with stable node IDs, `schema_version`, and discriminated node types; do not persist arbitrary unvalidated JSON. Separate canonical relational data from composition state. Document deletion and migration semantics.
 
 For localized content, consistently model English/French variants (e.g., typed `localized_content` JSONB with `{ en, fr }` keys). Keep language-independent facts (dates, URLs, sort positions) outside translations. Translation data is written by the owner; AI translation suggestions (§16) are stored only once the owner accepts them.
 
@@ -196,6 +196,7 @@ Do not guess final SQL schema from this outline. Design indexes, constraints, fo
 ## 10. UX/UI engineering rules
 
 - Mobile first for the **dashboard**. On large screens, use a section/navigation panel + editor + live preview when space allows. On mobile, use an editor/preview toggle; never shrink A4 into an unusable editing control.
+- Exception: the **template designer** is desktop/tablet-first, because placing boxes precisely needs a large screen. On a phone it must stay usable (panels stacked under the page, position and size editable as numbers). Everything the pointer does also works from the keyboard (arrows move, Shift for 5 mm, Ctrl/Cmd+arrows resize, Delete, Ctrl/Cmd+D), and changes are announced to screen readers.
 - Match the supplied CV only inside the document canvas. The dashboard itself should be contemporary, visually clear, and accessible.
 - Define tokens for colors, surfaces, typography, spacing, borders, radii, shadows, focus, and feedback; don't sprinkle arbitrary values.
 - **DRY:** use shared Button, Input, Textarea, Select, Combobox, Checkbox/Switch, Date/Month-Year Picker, Dialog, Confirmation Dialog, Tabs, Badge, File Upload, Form Field, Empty State, Error State, Skeleton, and Toast patterns. Extend shadcn/ui rather than cloning near-identical components.
@@ -229,6 +230,7 @@ Do not guess final SQL schema from this outline. Design indexes, constraints, fo
 - Use `@page { size: A4; }`, print media styles, predictable margins, page-break protections for headings and compact entry blocks. Avoid blank pages, footer overlaps, clipped content, and fake one-page squeezing.
 - Real PDF output must retain selectable/searchable text and preferably functional URLs; do not flatten the entire CV into an image.
 - Keep CV text in normal flow: no `position`, `float`, `transform`, `opacity` or `z-index` on boxes holding text. Chromium writes PDF text in paint order, which is what copy-paste and ATS parsers read; positioned or floated text lands out of place (e.g. every bullet after the last section). `tests/e2e/cv-export.spec.ts` checks the reading order.
+- Template designs (`canvas-v1`, approved 2026-10-23) are the one exception, under these safeguards: only the element boxes are positioned (absolute, in mm; no `z-index`, `transform` or `opacity`), and the text inside them stays in normal flow. Decorations (photo, lines, shapes) are written first and drawn under the text; text elements follow in the design's reading order (the order of `elements`, shown and editable in the designer), so paint order is reading order. Text boxes must not overlap. Text cut off by its box, running past its page, or overlapping another text box blocks print and export until fixed: measured in the designer and in the CV editor, and measured again on the print page, where the PDF engine refuses to print (`layout_issues`, HTTP 409). Never shrink text to make a design fit. `tests/e2e/templates.spec.ts` checks the reading order and the block.
 - Do not store exported PDFs publicly by default. Download on demand or use private short-lived signed access when necessary.
 - Test French/English, short/long CVs, photo on/off, optional sections, and multi-page overflow using exported artifacts, not just browser preview.
 
@@ -286,7 +288,7 @@ Acceptance examples:
 Approved features, in build order (owner decisions of 2026-10-22):
 
 1. **Job post and ATS match score.** The owner pastes a job post (text only, no URL import). The AI provider extracts its requirements once (skills, tools, languages, education, experience; required or preferred), and the owner can edit them. The app then scores CVs against them with a deterministic keyword match: no AI call per check. Built in two PRs: PR 1 (AI infrastructure, Settings, Jobs pages, scores on the job page; done) and PR 2 (Job Match in the CV Builder: live score, the CV's job post, visibility suggestions). Scoring rules and formula: `src/features/job-posts/matching.ts` and README.
-2. **CV tailored to a job post.** The AI provider proposes a new draft CV from career data: which records to include, their order, and per-CV wording (title, summary, bullets) in the CV's language. This replaces the separate bullet-rewording feature.
+2. **CV tailored to a job post** (built 2026-10-26, in the narrower scope the owner chose that day). On New CV the owner picks a template and a job post (pasted, then read as in step 1, or saved), and the AI provider chooses only: the 2 projects that best fit the job (`TAILORED_PROJECTS`: a template is laid out for a couple of projects), which technical skills show (the others are hidden, never deleted), and a suggested CV title made from the job title. Everything else comes from career data unchanged; any other AI-written text (summary or bullet rewording) needs a new approval. The owner reviews the choice before the CV exists (estimated coverage, reasons, skills shown and hidden, requirements the career data lacks); creating the CV accepts the title, so the CV holds no unreviewed AI text. *Choose by keywords* makes the same choice without AI. Rules and limits: `src/features/cv-tailoring` and README.
 3. **Translation suggestions** (French ↔ English) for missing translations.
 
 Anything else (cover letters, AI-judged scores, URL import, summaries outside a tailored CV) needs a new approval. Plan each feature (schema, UI, API, tests) and get the plan approved before building it.

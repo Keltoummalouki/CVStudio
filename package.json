@@ -24,6 +24,7 @@
     "db:start": "supabase start -x studio,postgres-meta,imgproxy,vector,logflare,supavisor,edge-runtime,realtime",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
+    "db:seed": "node scripts/seed-local.mjs",
     "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts && prettier --write src/lib/supabase/database.types.ts",
     "clean": "node scripts/clean-build.mjs"
   },
