@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { CopyIcon, DownloadIcon, PrinterIcon, Trash2Icon } from "lucide-react";
+import {
+  BriefcaseBusinessIcon,
+  CopyIcon,
+  DownloadIcon,
+  PrinterIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/feedback/confirm-dialog";
@@ -18,7 +24,8 @@ import {
   saveCv,
 } from "@/features/cv-documents/server/actions";
 import type { CvDocument } from "@/features/cv-documents/server/queries";
-import { useRouter } from "@/lib/i18n/navigation";
+import { jobHref } from "@/features/job-posts/routes";
+import { Link, useRouter } from "@/lib/i18n/navigation";
 import type { CvLabelSet } from "../labels";
 import type { MasterData } from "../master-data";
 import { isBlockingIssue } from "../resolve";
@@ -171,6 +178,16 @@ export function CvBuilder({ document, master, labels, photoUrl }: CvBuilderProps
               <CopyIcon aria-hidden="true" />
               {t("toolbar.duplicate")}
             </DropdownMenuItem>
+            {document.jobPost ? (
+              <DropdownMenuItem asChild>
+                <Link href={jobHref(document.jobPost.id)}>
+                  <BriefcaseBusinessIcon aria-hidden="true" />
+                  <span className="truncate">
+                    {t("toolbar.jobPost", { title: document.jobPost.title })}
+                  </span>
+                </Link>
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
               <Trash2Icon aria-hidden="true" />

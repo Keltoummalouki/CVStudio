@@ -51,6 +51,7 @@ function cvDocument(overrides: Partial<CvDocument> = {}): CvDocument {
     createdFromTemplateName: null,
     definition: createDefaultDefinition(master, sequentialIds()),
     design: null,
+    jobPost: null,
     ...overrides,
   };
 }
@@ -260,6 +261,26 @@ describe("CV builder", () => {
       expect(mocks.duplicateCv).toHaveBeenCalledWith(CV_ID, "Copy of Frontend CV"),
     );
     expect(mocks.router.push).toHaveBeenCalledWith("/dashboard/cvs/copy-id");
+  });
+
+  it("links to the job post the CV was made for, when there is one", async () => {
+    const { user } = renderBuilder(
+      cvDocument({
+        jobPost: { id: "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a", title: "Frontend developer" },
+      }),
+    );
+
+    await user.click(screen.getByRole("button", { name: "More actions" }));
+    expect(screen.getByRole("menuitem", { name: "Job post: Frontend developer" })).toHaveAttribute(
+      "href",
+      "/en/dashboard/jobs/5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a",
+    );
+  });
+
+  it("shows no job post link for a CV made without one", async () => {
+    const { user } = renderBuilder();
+    await user.click(screen.getByRole("button", { name: "More actions" }));
+    expect(screen.queryByRole("menuitem", { name: /^Job post/ })).not.toBeInTheDocument();
   });
 
   it("deletes the CV after confirmation, with an undo", async () => {

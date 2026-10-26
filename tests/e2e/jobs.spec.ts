@@ -10,6 +10,21 @@ const unique = () => Math.random().toString(36).slice(2, 8);
 const CV_URL = /\/en\/dashboard\/cvs\/[0-9a-f-]{36}$/;
 const JOB_URL = /\/en\/dashboard\/jobs\/[0-9a-f-]{36}$/;
 
+// Visible only: Next keeps pages navigated away from mounted but hidden.
+const preview = (page: Page) =>
+  page.locator("article[data-visual-template]").filter({ visible: true });
+
+// Read by the fake analysis (its first line is the title), then tailored by the
+// fake provider, which picks the best keyword matches and the job title as written.
+const tailoredTitle = `Web developer ${unique()}`;
+const TAILORED_POST = [
+  tailoredTitle,
+  "Company: Example Logistics",
+  "You will build web apps with React and TypeScript.",
+  "Our APIs run on Node.js with PostgreSQL.",
+  "Docker is a plus.",
+].join("\n");
+
 // The fake providers (AI_FAKE_PROVIDER=1) read this vocabulary line by line. The
 // marker makes the stand-in for Groq time out, so the one for Gemini answers:
 // the fallback path, end to end, without calling either.
@@ -34,7 +49,7 @@ async function createCv(page: Page, name: string) {
 
 async function setAi(page: Page, { enabled, limit }: { enabled: boolean; limit: number }) {
   await page.goto("/en/dashboard/settings");
-  const toggle = page.getByRole("switch", { name: "Use AI to analyze job posts" });
+  const toggle = page.getByRole("switch", { name: "Use AI for job posts and CVs" });
   if ((await toggle.getAttribute("aria-checked")) !== String(enabled)) await toggle.click();
   await page.getByRole("spinbutton", { name: "Daily limit" }).fill(String(limit));
   await page.getByRole("button", { name: "Save AI settings" }).click();
@@ -56,6 +71,7 @@ test.describe("job posts and the match score", () => {
   test.skip(({ isMobile }) => isMobile, "Desktop flows; phones are covered by the shell spec.");
 
   const cvName = `Match ${unique()}`;
+  const jobTitle = `Platform engineer ${unique()}`;
 
   test("requirements typed by hand score the CVs, with no AI involved", async ({ page }) => {
     await createCv(page, cvName);
@@ -65,7 +81,6 @@ test.describe("job posts and the match score", () => {
     await expect(page.getByRole("button", { name: "Analyze with AI" })).toBeDisabled();
     await page.getByRole("button", { name: "Enter requirements myself" }).click();
 
-    const jobTitle = `Platform engineer ${unique()}`;
     await page.getByRole("textbox", { name: "Job title" }).fill(jobTitle);
     await page.getByRole("button", { name: "Add a requirement" }).click();
     await page.getByRole("textbox", { name: "Requirement 1", exact: true }).fill("Docker");
@@ -96,10 +111,13 @@ test.describe("job posts and the match score", () => {
     );
     await expectNoSeriousViolations(page);
 
-    // A CV for this job starts named after it.
+    // A CV for this job starts tailored to it, and named after it.
     await page.getByRole("link", { name: "Create a CV for this job" }).click();
     await expect(page).toHaveURL(/\/en\/dashboard\/cvs\/new\?job=[0-9a-f-]{36}$/);
-    await expect(page.getByText(`For the job post “${jobTitle}”`, { exact: false })).toBeVisible();
+    await expect(page.getByRole("radio", { name: /^Tailored to a job post/ })).toBeChecked();
+    await expect(page.getByRole("combobox", { name: "Saved job post" })).toHaveValue(
+      /^[0-9a-f-]{36}$/,
+    );
     await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue(jobTitle);
   });
 
@@ -186,5 +204,80 @@ test.describe("job posts and the match score", () => {
     // Parallel flows add CVs: search, so the list's paging never hides this one.
     await page.getByRole("searchbox", { name: "Search your CVs" }).fill(cvName);
     await expect(page.getByRole("link", { name: cvName })).toBeVisible();
+  });
+
+  test("with AI off, a CV is tailored to a saved post by keywords", async ({ page }) => {
+    await page.goto("/en/dashboard/cvs/new");
+    await page.getByRole("radio", { name: /^Tailored to a job post/ }).check();
+    await page.getByRole("radio", { name: "Use a saved post" }).click();
+    await page
+      .getByRole("combobox", { name: "Saved job post" })
+      .selectOption({ label: `${jobTitle} · 2 requirements` });
+    await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue(jobTitle);
+    await expect(page.getByText(/AI is off\. Turn it on in Settings/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Generate with AI" })).toBeDisabled();
+
+    await page.getByRole("button", { name: "Choose by keywords" }).click();
+    const review = page.getByRole("region", { name: `Tailored for “${jobTitle}”` });
+    await expect(review.getByText("Chosen by keyword matching")).toBeVisible();
+    // EventHub names Docker; the booking platform names none of the requirements.
+    const projects = review.getByRole("region", { name: "Projects · 2 of 2" });
+    await expect(projects.getByRole("listitem").first()).toContainText("EventHub");
+    // The skill group holding Docker stays; the others are hidden.
+    await expect(review.getByRole("region", { name: /^Technical skills · 2 shown/ })).toBeVisible();
+    await expect(review.getByRole("region", { name: "The job’s requirements" })).toContainText(
+      "Not in your career data (1)Kubernetes",
+    );
+    await expectNoSeriousViolations(page);
+
+    await page.getByRole("button", { name: "Create and open" }).click();
+    await expect(page).toHaveURL(CV_URL);
+    const skills = preview(page).locator('[data-section-kind="technical_skills"]');
+    await expect(skills).toContainText("Docker");
+    await expect(skills).not.toContainText("Figma");
+    await page.getByRole("button", { name: "More actions" }).click();
+    await expect(page.getByRole("menuitem", { name: `Job post: ${jobTitle}` })).toBeVisible();
+  });
+
+  test("the test provider tailors a CV to a pasted post, reviewed before it exists", async ({
+    page,
+  }) => {
+    await setAi(page, { enabled: true, limit: 10 });
+    await page.goto("/en/dashboard/cvs/new");
+    await page.getByRole("radio", { name: /^Tailored to a job post/ }).check();
+    await expect(page.getByText(/Sends Groq, or Gemini when Groq is unavailable/)).toBeVisible();
+    await page.getByRole("textbox", { name: "Job post" }).fill(TAILORED_POST);
+    await page.getByRole("button", { name: "Generate with AI" }).click();
+
+    const review = page.getByRole("region", { name: `Tailored for “${tailoredTitle}”` });
+    await expect(review.getByText("Chosen by AI")).toBeVisible();
+    await expect(review.getByText("Test provider")).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue(
+      `${tailoredTitle} – Example Logistics`,
+    );
+    const projects = review.getByRole("region", { name: "Projects · 2 of 2" });
+    await expect(projects.getByRole("listitem").first()).toContainText("EventHub");
+    await expect(projects.getByRole("listitem").first()).toContainText("which the job asks for");
+    await expect(review.getByRole("textbox", { name: "Suggested CV title" })).toHaveValue(
+      tailoredTitle,
+    );
+    await expectNoSeriousViolations(page);
+
+    await page.getByRole("button", { name: "Create and open" }).click();
+    await expect(page).toHaveURL(CV_URL);
+    await expect(preview(page).getByRole("heading", { level: 1 })).toHaveText(tailoredTitle);
+    const skills = preview(page).locator('[data-section-kind="technical_skills"]');
+    await expect(skills).toContainText("React");
+    await expect(skills).not.toContainText("Figma");
+
+    // The post was saved to Job match with the CV, which links to it.
+    await page.getByRole("button", { name: "More actions" }).click();
+    await page.getByRole("menuitem", { name: `Job post: ${tailoredTitle}` }).click();
+    await expect(page).toHaveURL(JOB_URL);
+    await expect(page.getByRole("textbox", { name: "Job title" })).toHaveValue(tailoredTitle);
+
+    await page.goto("/en/dashboard/settings");
+    await expect(page.getByText("CV tailoring · Succeeded")).toBeVisible();
+    await setAi(page, { enabled: false, limit: 10 });
   });
 });

@@ -49,6 +49,7 @@ const OVERVIEW: AiOverview = {
     request({}),
     request({
       id: "r2",
+      feature: "cv_tailoring",
       provider: "gemini",
       model: "gemini-3.8-flash",
       startedAt: "2026-10-23T10:00:00Z",
@@ -85,10 +86,10 @@ describe("AiSettingsPanel", () => {
     const user = userEvent.setup();
     renderWithIntl(<AiSettingsPanel overview={OVERVIEW} />);
 
-    const toggle = screen.getByRole("switch", { name: "Use AI to analyze job posts" });
+    const toggle = screen.getByRole("switch", { name: "Use AI for job posts and CVs" });
     expect(toggle).not.toBeChecked();
     expect(toggle).toHaveAccessibleDescription(
-      "When you press Analyze, the text of the job post is sent to Groq, or to Gemini when Groq is unavailable. Your CVs and career data are not sent.",
+      "Analyzing a job post sends its text to Groq, or to Gemini when Groq is unavailable. Tailoring a CV sends them the job’s requirements and your projects and skills (titles, short descriptions, technologies), never your name, contacts, photo or links.",
     );
 
     await user.click(toggle);
@@ -133,10 +134,10 @@ describe("AiSettingsPanel", () => {
     expect(providers).toHaveTextContent("Primary providerGroqReady · openai/gpt-oss-20b");
     expect(providers).toHaveTextContent("Fallback providerGeminiReady · gemini-3.8-flash");
     expect(providers).toHaveTextContent(
-      "Gemini answers only when Groq is busy, rate-limited or too slow. An analysis counts once toward the daily limit, even when both are tried.",
+      "Gemini answers only when Groq is busy, rate-limited or too slow. A request counts once toward the daily limit, even when both are tried.",
     );
     expect(providers).toHaveTextContent(
-      "Last analysisgemini-3.8-flash (Gemini, as the fallback) · 10/23/26, 10:00 AM",
+      "Last requestgemini-3.8-flash (Gemini, as the fallback) · 10/23/26, 10:00 AM",
     );
     expect(screen.getByText(/Zero Data Retention/)).toBeInTheDocument();
     expect(screen.getByText(/billing turned on/)).toBeInTheDocument();
@@ -156,6 +157,7 @@ describe("AiSettingsPanel", () => {
     expect(rows[0]).toHaveTextContent("Groq · openai/gpt-oss-20b");
     expect(rows[0]).toHaveTextContent("1,250 tokens");
     expect(rows[0]).toHaveTextContent("$0.0021");
+    expect(rows[1]).toHaveTextContent("CV tailoring · Succeeded");
     expect(rows[1]).toHaveTextContent("Groq (took too long) → Gemini · gemini-3.8-flash");
     expect(rows[2]).toHaveTextContent("Failed · unknown error");
     expect(rows[2]).toHaveTextContent("openai/gpt-oss-20b");
@@ -186,9 +188,9 @@ describe("AiSettingsPanel", () => {
       screen.getByText("Add GEMINI_API_KEY to the server’s environment variables to use it."),
     ).toBeInTheDocument();
     expect(screen.getByRole("switch")).toHaveAccessibleDescription(
-      "When you press Analyze, the text of the job post is sent to Groq. Your CVs and career data are not sent.",
+      "Analyzing a job post sends its text to Groq. Tailoring a CV sends it the job’s requirements and your projects and skills (titles, short descriptions, technologies), never your name, contacts, photo or links.",
     );
-    expect(screen.getByText("No analysis yet.")).toBeInTheDocument();
+    expect(screen.getByText("No AI request yet.")).toBeInTheDocument();
     expect(screen.getByText("No AI requests yet.")).toBeInTheDocument();
   });
 
@@ -218,7 +220,7 @@ describe("AiSettingsPanel", () => {
     );
     expect(screen.getByText(/AI_PRIMARY_PROVIDER must be groq or gemini/)).toBeInTheDocument();
     expect(screen.getByRole("switch")).toHaveAccessibleDescription(
-      /only the text of the job post is sent to an AI provider/,
+      /sends its text to an AI provider/,
     );
   });
 
@@ -239,7 +241,7 @@ describe("AiSettingsPanel", () => {
     expect(screen.getAllByText("Fournisseur de test")).toHaveLength(2);
     expect(screen.getByText(/aucune requête ne quitte le serveur/)).toBeInTheDocument();
     expect(
-      screen.getByRole("switch", { name: "Utiliser l’IA pour analyser les offres" }),
+      screen.getByRole("switch", { name: "Utiliser l’IA pour les offres et les CV" }),
     ).toBeInTheDocument();
   });
 });

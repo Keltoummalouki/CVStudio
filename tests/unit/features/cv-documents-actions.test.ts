@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultDefinition } from "@/features/cv-builder/defaults";
+import { definitionSchema, type CvDefinition } from "@/features/cv-builder/definition";
 import { createBlankDesign } from "@/features/cv-design/design";
 import { buildMasterData, sequentialIds } from "../../fixtures/master-data";
+import { PROJECTS, SKILLS, TAILORING_JOB, tailoringCareer } from "../../fixtures/tailoring";
 import {
   callsOf,
   createFakeSupabase,
@@ -27,6 +29,7 @@ const { createCv, deleteCv, duplicateCv, getCvRevision, restoreCv, saveCv } =
 
 const CV_ID = "3e9f6c1a-5b7d-4e2f-8a1c-9d0b2e4f6a8c";
 const TEMPLATE_ID = "6a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
+const JOB_ID = "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a";
 const definition = createDefaultDefinition(buildMasterData(), sequentialIds());
 
 function signIn(options: FakeSupabaseOptions = {}) {
@@ -165,6 +168,144 @@ describe("createCv", () => {
   });
 });
 
+describe("createCv for a job post", () => {
+  const JOB_ROW = {
+    id: JOB_ID,
+    title: TAILORING_JOB.title,
+    requirements: TAILORING_JOB.requirements,
+  };
+  const tailoring = {
+    projectIds: [PROJECTS.shop, PROJECTS.booking],
+    skillIds: [SKILLS.react, SKILLS.node],
+    title: "  Full Stack Developer ",
+  };
+
+  function insertedRow(fake: ReturnType<typeof signIn>) {
+    return callsOf(fake.queriesOn("cv_documents")[0], "insert")[0]?.[0] as Record<
+      string,
+      unknown
+    > & { definition: CvDefinition };
+  }
+
+  beforeEach(() => {
+    mocks.loadMasterData.mockResolvedValue(tailoringCareer());
+  });
+
+  it("links a CV with all career data to the owner's own job post", async () => {
+    const fake = signIn({
+      tables: { job_posts: { data: JOB_ROW }, cv_documents: { data: { id: CV_ID } } },
+    });
+
+    expect(await createCv({ name: "CV", locale: "en", jobPostId: JOB_ID })).toEqual({
+      ok: true,
+      data: { id: CV_ID },
+    });
+    const post = fake.queriesOn("job_posts")[0];
+    expect(isOwnerScoped(post)).toBe(true);
+    expect(callsOf(post, "eq")).toContainEqual(["id", JOB_ID]);
+    expect(callsOf(post, "is")).toContainEqual(["deleted_at", null]);
+
+    const row = insertedRow(fake);
+    expect(row.job_post_id).toBe(JOB_ID);
+    // Not tailored: every active project, and the profile's title.
+    const projects = row.definition.sections.find((section) => section.kind === "projects");
+    expect(projects?.kind === "projects" && projects.items.map((item) => item.refId)).toEqual([
+      PROJECTS.booking,
+      PROJECTS.shop,
+      PROJECTS.blog,
+    ]);
+    expect(row.definition.header.title).toBeUndefined();
+  });
+
+  it("applies the projects, skills and title the owner accepted", async () => {
+    const fake = signIn({
+      tables: { job_posts: { data: JOB_ROW }, cv_documents: { data: { id: CV_ID } } },
+    });
+
+    expect(
+      await createCv({ name: "CV", locale: "en", jobPostId: JOB_ID, tailoring }),
+    ).toMatchObject({ ok: true });
+
+    const { definition } = insertedRow(fake);
+    expect(definitionSchema.safeParse(definition).success).toBe(true);
+    expect(definition.header.title).toEqual({ en: "Full Stack Developer" });
+    const projects = definition.sections.find((section) => section.kind === "projects");
+    expect(projects?.kind === "projects" && projects.items.map((item) => item.refId)).toEqual([
+      PROJECTS.shop,
+      PROJECTS.booking,
+    ]);
+    const skills = definition.sections.find((section) => section.kind === "technical_skills");
+    const shown =
+      skills?.kind === "technical_skills"
+        ? skills.groups.flatMap((group) =>
+            group.skills.filter((skill) => skill.visible).map((skill) => skill.refId),
+          )
+        : [];
+    expect(shown).toEqual([SKILLS.react, SKILLS.node]);
+  });
+
+  it("keeps the profile's title when the owner chose it", async () => {
+    const fake = signIn({
+      tables: { job_posts: { data: JOB_ROW }, cv_documents: { data: { id: CV_ID } } },
+    });
+    await createCv({
+      name: "CV",
+      locale: "fr",
+      jobPostId: JOB_ID,
+      tailoring: { ...tailoring, title: null },
+    });
+    expect(insertedRow(fake).definition.header.title).toBeUndefined();
+  });
+
+  it("refuses tailoring without a job post, and ids that are not ids", async () => {
+    const fake = signIn();
+    expect(await createCv({ name: "CV", locale: "en", tailoring })).toMatchObject({
+      ok: false,
+      error: "invalid_input",
+      fieldIssues: [{ path: "tailoring", message: "invalid" }],
+    });
+    expect(
+      await createCv({
+        name: "CV",
+        locale: "en",
+        jobPostId: JOB_ID,
+        tailoring: { ...tailoring, projectIds: ["../secret"] },
+      }),
+    ).toMatchObject({ ok: false, error: "invalid_input" });
+    expect(
+      await createCv({
+        name: "CV",
+        locale: "en",
+        jobPostId: JOB_ID,
+        tailoring: { ...tailoring, projectIds: [PROJECTS.shop, PROJECTS.booking, PROJECTS.blog] },
+      }),
+    ).toMatchObject({ ok: false, error: "invalid_input" });
+    expect(fake.queries).toHaveLength(0);
+  });
+
+  it("reports a job post that is not the owner's, or gone, before creating anything", async () => {
+    const fake = signIn({ tables: { job_posts: { data: null } } });
+    expect(await createCv({ name: "CV", locale: "en", jobPostId: JOB_ID, tailoring })).toEqual({
+      ok: false,
+      error: "not_found",
+      fieldIssues: [{ path: "jobPostId", message: "notFound" }],
+    });
+    expect(fake.queriesOn("cv_documents")).toHaveLength(0);
+
+    signIn({ tables: { job_posts: { error: { message: "network" } } } });
+    expect(await createCv({ name: "CV", locale: "en", jobPostId: JOB_ID })).toEqual({
+      ok: false,
+      error: "unavailable",
+    });
+
+    signIn({ tables: { job_posts: { data: { ...JOB_ROW, requirements: { bad: true } } } } });
+    expect(await createCv({ name: "CV", locale: "en", jobPostId: JOB_ID })).toEqual({
+      ok: false,
+      error: "unavailable",
+    });
+  });
+});
+
 describe("saveCv", () => {
   const input = { id: CV_ID, expectedRevision: 4, name: "CV", locale: "en", definition };
 
@@ -233,9 +374,10 @@ describe("duplicateCv", () => {
     design: createBlankDesign(),
     created_from_template_id: TEMPLATE_ID,
     created_from_template_name: "Engineering",
+    job_post_id: "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a",
   };
 
-  it("inserts an independent copy for the same owner, its design included", async () => {
+  it("inserts an independent copy for the same owner, its design and job post included", async () => {
     const fake = signIn({ tables: { cv_documents: [{ data: source }, { data: { id: "copy" } }] } });
 
     expect(await duplicateCv(CV_ID, "Copy of CV")).toEqual({ ok: true, data: { id: "copy" } });

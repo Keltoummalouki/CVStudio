@@ -6,6 +6,10 @@ import { createDefaultDefinition } from "@/features/cv-builder/defaults";
 import type { CvDefinition } from "@/features/cv-builder/definition";
 import { loadMasterData } from "@/features/cv-builder/server/load-master-data";
 import { designSchema } from "@/features/cv-design/design";
+import { tailorDefinition } from "@/features/cv-tailoring/tailor-definition";
+import { jobTitles } from "@/features/cv-tailoring/tailoring";
+import { compileRequirements } from "@/features/job-posts/matching";
+import { storedRequirementsSchema, type RequirementsDocument } from "@/features/job-posts/schemas";
 import { fail, issuesFromZod, mapDatabaseError, ok, type ActionResult } from "@/lib/actions/result";
 import { getOwnerContext } from "@/lib/auth/session";
 import type { Json } from "@/lib/supabase/database.types";
@@ -18,6 +22,10 @@ const idSchema = z.uuid();
  * Creates a CV from all active career data in the reference section order,
  * drawn by Classic or by one of the owner's designs. A design is copied: editing
  * or deleting the template later never changes this CV.
+ *
+ * A CV made for one of the owner's job posts links to it. Tailored to it, it
+ * shows the projects, skills and title the owner accepted on the New CV page
+ * (cv-tailoring); ids that are not the owner's active records are left out.
  */
 export async function createCv(input: unknown): Promise<ActionResult<{ id: string }>> {
   const context = await getOwnerContext();
@@ -54,9 +62,33 @@ export async function createCv(input: unknown): Promise<ActionResult<{ id: strin
     };
   }
 
+  let job: { id: string; title: string; requirements: RequirementsDocument } | null = null;
+  if (parsed.data.jobPostId) {
+    const post = await supabase
+      .from("job_posts")
+      .select("id, title, requirements")
+      .eq("owner_id", owner.id)
+      .eq("id", parsed.data.jobPostId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (post.error) return fail("unavailable");
+    if (!post.data) return fail("not_found", [{ path: "jobPostId", message: "notFound" }]);
+    const requirements = storedRequirementsSchema.safeParse(post.data.requirements);
+    if (!requirements.success) return fail("unavailable");
+    job = { id: post.data.id, title: post.data.title, requirements: requirements.data };
+  }
+
   let definition: CvDefinition;
   try {
-    definition = createDefaultDefinition(await loadMasterData(context));
+    const master = await loadMasterData(context);
+    definition = createDefaultDefinition(master);
+    if (job && parsed.data.tailoring) {
+      definition = tailorDefinition(definition, master, parsed.data.tailoring, {
+        compiled: compileRequirements(job.title, job.requirements),
+        locale: parsed.data.locale,
+        titles: jobTitles(job),
+      });
+    }
   } catch {
     return fail("unavailable");
   }
@@ -70,6 +102,7 @@ export async function createCv(input: unknown): Promise<ActionResult<{ id: strin
       schema_version: definition.schemaVersion,
       definition: asJsonObject(definition),
       ...look,
+      ...(job ? { job_post_id: job.id } : {}),
     })
     .select("id")
     .single();
@@ -159,7 +192,7 @@ export async function duplicateCv(
   const source = await supabase
     .from("cv_documents")
     .select(
-      "locale, schema_version, definition, visual_template_key, design, created_from_template_id, created_from_template_name",
+      "locale, schema_version, definition, visual_template_key, design, created_from_template_id, created_from_template_name, job_post_id",
     )
     .eq("owner_id", owner.id)
     .eq("id", parsedId.data)

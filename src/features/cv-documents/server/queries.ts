@@ -109,6 +109,8 @@ export type CvDocument = {
   definition: CvDefinition;
   /** Its own copy of a free-form design; null when Classic draws it. */
   design: Design | null;
+  /** The job post it was made for, while that post exists. */
+  jobPost: { id: string; title: string } | null;
 };
 
 /** Cached per request: metadata and the page read the same row once. */
@@ -117,7 +119,7 @@ export const getCvDocument = cache(async (id: string): Promise<CvDocument> => {
   const { data, error } = await supabase
     .from("cv_documents")
     .select(
-      "id, name, locale, revision, updated_at, created_from_template_name, definition, design",
+      "id, name, locale, revision, updated_at, created_from_template_name, definition, design, job_post:job_posts(id, title, deleted_at)",
     )
     .eq("owner_id", owner.id)
     .eq("id", id)
@@ -144,6 +146,11 @@ export const getCvDocument = cache(async (id: string): Promise<CvDocument> => {
     createdFromTemplateName: data.created_from_template_name,
     definition: definition.data,
     design: design ? design.data : null,
+    // A deleted post keeps its link (it can be restored) but has no page to open.
+    jobPost:
+      data.job_post && data.job_post.deleted_at === null
+        ? { id: data.job_post.id, title: data.job_post.title }
+        : null,
   };
 });
 

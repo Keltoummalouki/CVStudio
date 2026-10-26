@@ -4,12 +4,14 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { PageContainer, PageHeader, Panel } from "@/components/layout/page";
 import { Button } from "@/components/ui/button";
+import { toAiAccess } from "@/features/ai-settings/access";
+import { getAiStatus } from "@/features/ai-settings/server/queries";
 import { getCareerSummary } from "@/features/career-data/server/queries";
 import { NewCvForm } from "@/features/cv-documents/components/new-cv-form";
 import { TEMPLATE_QUERY_PARAM } from "@/features/cv-templates/routes";
 import { listTemplateChoices } from "@/features/cv-templates/server/queries";
 import { JOB_QUERY_PARAM } from "@/features/job-posts/routes";
-import { findJobPostChoice } from "@/features/job-posts/server/queries";
+import { findJobPostChoice, listJobPostChoices } from "@/features/job-posts/server/queries";
 import { isLocale } from "@/lib/i18n/config";
 import { Link } from "@/lib/i18n/navigation";
 
@@ -25,12 +27,14 @@ export default async function Page({ searchParams }: Props) {
   // A CV made for a job post (its page links here): only one of the owner's own posts counts.
   const requestedJob = query[JOB_QUERY_PARAM];
   const jobId = typeof requestedJob === "string" ? z.uuid().safeParse(requestedJob) : null;
-  const [t, summary, locale, templates, job] = await Promise.all([
+  const [t, summary, locale, templates, job, jobPosts, aiStatus] = await Promise.all([
     getTranslations("cvs.new"),
     getCareerSummary(),
     getLocale(),
     listTemplateChoices(),
     jobId?.success ? findJobPostChoice(jobId.data) : null,
+    listJobPostChoices(),
+    getAiStatus(),
   ]);
   const { profileStarted, ...counts } = summary;
   const hasRecords = Object.values(counts).some((count) => count > 0);
@@ -69,6 +73,8 @@ export default async function Page({ searchParams }: Props) {
           templates={templates}
           initialTemplateId={initialTemplateId}
           job={job}
+          jobPosts={jobPosts}
+          ai={toAiAccess(aiStatus)}
         />
       </Panel>
     </PageContainer>

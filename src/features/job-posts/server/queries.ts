@@ -19,8 +19,8 @@ import {
   type TextIndex,
 } from "../matching";
 import {
-  JOB_POST_LANGUAGES,
   storedRequirementsSchema,
+  toJobPostLanguage,
   type JobPostLanguage,
   type JobPostValues,
   type RequirementsDocument,
@@ -68,13 +68,9 @@ export type JobPostChoice = {
   title: string;
   company: string;
   language: JobPostLanguage;
+  /** A CV is tailored to these; a post without any cannot be used for that. */
+  requirementCount: number;
 };
-
-function toLanguage(value: string): JobPostLanguage {
-  return (JOB_POST_LANGUAGES as readonly string[]).includes(value)
-    ? (value as JobPostLanguage)
-    : "other";
-}
 
 function readRequirements(value: unknown): RequirementsDocument {
   const parsed = storedRequirementsSchema.safeParse(value);
@@ -157,7 +153,7 @@ export async function listJobPosts(): Promise<JobPostSummary[]> {
       id: row.id,
       title: row.title,
       company: row.company,
-      language: toLanguage(row.language),
+      language: toJobPostLanguage(row.language),
       updatedAt: row.updated_at,
       analyzedAt: row.analyzed_at,
       required: requirements.items.filter((item) => item.importance === "required").length,
@@ -189,7 +185,7 @@ export const getJobPost = cache(async (id: string): Promise<JobPostPage> => {
     expectedUpdatedAt: data.updated_at,
     title: data.title,
     company: data.company,
-    language: toLanguage(data.language),
+    language: toJobPostLanguage(data.language),
     description: data.description,
     requirements: readRequirements(data.requirements),
     analyzed: false,
@@ -205,6 +201,24 @@ export const getJobPost = cache(async (id: string): Promise<JobPostPage> => {
   };
 });
 
+const CHOICE_COLUMNS = "id, title, company, language, requirements";
+
+function toChoice(row: {
+  id: string;
+  title: string;
+  company: string;
+  language: string;
+  requirements: unknown;
+}): JobPostChoice {
+  return {
+    id: row.id,
+    title: row.title,
+    company: row.company,
+    language: toJobPostLanguage(row.language),
+    requirementCount: readRequirements(row.requirements).items.length,
+  };
+}
+
 /**
  * The owner's job post a new CV is made for (New CV page, `?job=`), or null
  * when the id is not one of theirs.
@@ -213,11 +227,25 @@ export async function findJobPostChoice(id: string): Promise<JobPostChoice | nul
   const { supabase, owner } = await requireOwner();
   const { data, error } = await supabase
     .from("job_posts")
-    .select("id, title, company, language")
+    .select(CHOICE_COLUMNS)
     .eq("owner_id", owner.id)
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new DataAccessError("read job post choice", { cause: error });
-  return data ? { ...data, language: toLanguage(data.language) } : null;
+  return data ? toChoice(data) : null;
+}
+
+/** The owner's job posts a new CV can be tailored to, most recently edited first. */
+export async function listJobPostChoices(): Promise<JobPostChoice[]> {
+  const { supabase, owner } = await requireOwner();
+  const { data, error } = await supabase
+    .from("job_posts")
+    .select(CHOICE_COLUMNS)
+    .eq("owner_id", owner.id)
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(LIST_LIMIT);
+  if (error) throw new DataAccessError("list job post choices", { cause: error });
+  return data.map(toChoice);
 }

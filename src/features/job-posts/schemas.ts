@@ -25,6 +25,13 @@ export type RequirementImportance = (typeof REQUIREMENT_IMPORTANCE)[number];
 export const JOB_POST_LANGUAGES = ["en", "fr", "other"] as const;
 export type JobPostLanguage = (typeof JOB_POST_LANGUAGES)[number];
 
+/** A stored language, or "other" for anything unexpected. */
+export function toJobPostLanguage(value: string): JobPostLanguage {
+  return (JOB_POST_LANGUAGES as readonly string[]).includes(value)
+    ? (value as JobPostLanguage)
+    : "other";
+}
+
 export const JOB_POST_LIMITS = {
   title: 160,
   company: 120,

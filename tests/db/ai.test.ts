@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { Json } from "@/lib/supabase/database.types";
 import {
   CHECK_VIOLATION,
+  FOREIGN_KEY_VIOLATION,
   PERMISSION_DENIED,
   adminClient,
   anonClient,
@@ -471,5 +472,88 @@ describe("job posts", () => {
   ])("refuses %s", async (_case, row) => {
     const { error } = await insert(row);
     expect(error?.code).toBe(CHECK_VIOLATION);
+  });
+});
+
+describe("CVs made for a job post", () => {
+  let owner: TestUser;
+  let other: TestUser;
+
+  beforeAll(async () => {
+    [owner, other] = await Promise.all([
+      createUser({ allowlisted: true }),
+      createUser({ allowlisted: true }),
+    ]);
+  });
+
+  async function jobPost(user: TestUser): Promise<string> {
+    const { data, error } = await user.client
+      .from("job_posts")
+      .insert({ title: "Frontend developer" })
+      .select("id")
+      .single();
+    if (error || !data) throw error ?? new Error("no job post");
+    return data.id;
+  }
+
+  const cv = (user: TestUser, jobPostId: string | null) =>
+    user.client
+      .from("cv_documents")
+      .insert({ name: "Tailored", job_post_id: jobPostId })
+      .select("id, job_post_id")
+      .single();
+
+  it("links a CV to one of its owner's own job posts only", async () => {
+    const own = await jobPost(owner);
+    const linked = await cv(owner, own);
+    expect(linked.error).toBeNull();
+    expect(linked.data?.job_post_id).toBe(own);
+
+    const foreign = await jobPost(other);
+    expect((await cv(owner, foreign)).error?.code).toBe(FOREIGN_KEY_VIOLATION);
+    const moved = await owner.client
+      .from("cv_documents")
+      .update({ job_post_id: foreign })
+      .eq("id", linked.data!.id)
+      .select("id");
+    expect(moved.error?.code).toBe(FOREIGN_KEY_VIOLATION);
+
+    // Nobody else sees the link, or the CV.
+    expect(
+      (await other.client.from("cv_documents").select("id").eq("job_post_id", own)).data,
+    ).toEqual([]);
+  });
+
+  it("keeps the CV when its job post is deleted for good, only the link goes", async () => {
+    const post = await jobPost(owner);
+    const linked = await cv(owner, post);
+    expect((await owner.client.from("job_posts").delete().eq("id", post)).error).toBeNull();
+
+    const after = await owner.client
+      .from("cv_documents")
+      .select("id, job_post_id, deleted_at")
+      .eq("id", linked.data!.id)
+      .single();
+    expect(after.data).toEqual({ id: linked.data!.id, job_post_id: null, deleted_at: null });
+  });
+
+  it("logs a tailoring request like any other, and no feature it does not know", async () => {
+    const user = await createUser({ allowlisted: true });
+    await enableAi(user, 5);
+    const begun = await user.client.rpc("begin_ai_request", {
+      p_feature: "cv_tailoring",
+      p_model: "openai/gpt-oss-20b",
+    });
+    expect(begun.error).toBeNull();
+    expect((await finish(user, begun.data!)).error).toBeNull();
+
+    const unknown = await user.client.rpc("begin_ai_request", {
+      p_feature: "cover_letter",
+      p_model: "openai/gpt-oss-20b",
+    });
+    expect(unknown.error?.code).toBe(CHECK_VIOLATION);
+    expect((await user.client.from("ai_requests").select("feature, status")).data).toEqual([
+      { feature: "cv_tailoring", status: "succeeded" },
+    ]);
   });
 });

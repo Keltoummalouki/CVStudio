@@ -20,7 +20,8 @@ export const AI_PROVIDER_KEY_VARS: Readonly<Record<AiProviderId, string>> = {
 export const DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b";
 export const GEMINI_MODEL = "gemini-3.8-flash";
 
-export const AI_FEATURES = ["job_post_analysis"] as const;
+/** Reading a job post's requirements; choosing what a CV shows for a job (step 2). */
+export const AI_FEATURES = ["job_post_analysis", "cv_tailoring"] as const;
 export type AiFeature = (typeof AI_FEATURES)[number];
 
 /** Requests per owner per UTC day. Postgres enforces it in begin_ai_request(). */

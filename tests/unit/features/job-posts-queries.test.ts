@@ -24,7 +24,7 @@ vi.mock("@/features/cv-builder/server/load-master-data", () => ({
 }));
 vi.mock("next-intl/server", () => ({ getLocale: mocks.getLocale }));
 
-const { findJobPostChoice, getJobPost, listJobPosts } =
+const { findJobPostChoice, getJobPost, listJobPostChoices, listJobPosts } =
   await import("@/features/job-posts/server/queries");
 
 const NOT_FOUND = "NEXT_HTTP_ERROR_FALLBACK;404";
@@ -242,7 +242,15 @@ describe("findJobPostChoice", () => {
   it("returns the owner's job post a new CV is made for", async () => {
     const fake = signIn({
       tables: {
-        job_posts: { data: { id: JOB_ID, title: "Frontend", company: "Acme", language: "fr" } },
+        job_posts: {
+          data: {
+            id: JOB_ID,
+            title: "Frontend",
+            company: "Acme",
+            language: "fr",
+            requirements: REQUIREMENTS,
+          },
+        },
       },
     });
 
@@ -251,6 +259,7 @@ describe("findJobPostChoice", () => {
       title: "Frontend",
       company: "Acme",
       language: "fr",
+      requirementCount: 3,
     });
     const read = fake.queriesOn("job_posts")[0];
     expect(isOwnerScoped(read)).toBe(true);
@@ -260,7 +269,17 @@ describe("findJobPostChoice", () => {
 
   it("reads an unknown language as another language", async () => {
     signIn({
-      tables: { job_posts: { data: { id: JOB_ID, title: "Dev", company: "", language: "de" } } },
+      tables: {
+        job_posts: {
+          data: {
+            id: JOB_ID,
+            title: "Dev",
+            company: "",
+            language: "de",
+            requirements: REQUIREMENTS,
+          },
+        },
+      },
     });
     expect(await findJobPostChoice(JOB_ID)).toMatchObject({ language: "other" });
   });
@@ -273,5 +292,53 @@ describe("findJobPostChoice", () => {
   it("fails as a data access error", async () => {
     signIn({ tables: { job_posts: { error: { message: "down" } } } });
     await expect(findJobPostChoice(JOB_ID)).rejects.toBeInstanceOf(DataAccessError);
+  });
+});
+
+describe("listJobPostChoices", () => {
+  it("lists the owner's live job posts, most recently edited first, with their requirement counts", async () => {
+    const fake = signIn({
+      tables: {
+        job_posts: {
+          data: [
+            {
+              id: JOB_ID,
+              title: "Frontend",
+              company: "Acme",
+              language: "en",
+              requirements: REQUIREMENTS,
+            },
+            {
+              id: "6d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a",
+              title: "Typed by hand",
+              company: "",
+              language: "fr",
+              requirements: { schemaVersion: 1, titleAliases: [], items: [] },
+            },
+          ],
+        },
+      },
+    });
+
+    expect(await listJobPostChoices()).toEqual([
+      { id: JOB_ID, title: "Frontend", company: "Acme", language: "en", requirementCount: 3 },
+      {
+        id: "6d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a",
+        title: "Typed by hand",
+        company: "",
+        language: "fr",
+        requirementCount: 0,
+      },
+    ]);
+    const read = fake.queriesOn("job_posts")[0];
+    expect(isOwnerScoped(read)).toBe(true);
+    expect(callsOf(read, "is")).toContainEqual(["deleted_at", null]);
+    expect(callsOf(read, "order")).toContainEqual(["updated_at", { ascending: false }]);
+    expect(callsOf(read, "limit")[0]?.[0]).toBeLessThanOrEqual(100);
+  });
+
+  it("fails as a data access error", async () => {
+    signIn({ tables: { job_posts: { error: { message: "down" } } } });
+    await expect(listJobPostChoices()).rejects.toBeInstanceOf(DataAccessError);
   });
 });

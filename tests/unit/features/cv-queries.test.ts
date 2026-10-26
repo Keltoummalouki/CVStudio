@@ -155,6 +155,7 @@ describe("CV document queries", () => {
             created_from_template_name: null,
             definition,
             design: null,
+            job_post: null,
           },
         },
       },
@@ -169,7 +170,37 @@ describe("CV document queries", () => {
       createdFromTemplateName: null,
       definition,
       design: null,
+      jobPost: null,
     });
+  });
+
+  it("links to the job post a CV was made for, while that post exists", async () => {
+    const JOB = { id: "5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a", title: "Frontend developer" };
+    const row = {
+      id: CV_ID,
+      name: "CV",
+      locale: "en",
+      revision: 3,
+      updated_at: "t",
+      created_from_template_name: null,
+      definition,
+      design: null,
+      job_post: { ...JOB, deleted_at: null },
+    };
+    const fake = signIn({ tables: { cv_documents: { data: row } } });
+    expect((await getCvDocument(CV_ID)).jobPost).toEqual(JOB);
+    expect(String(callsOf(fake.queriesOn("cv_documents")[0], "select")[0]?.[0])).toContain(
+      "job_post:job_posts(id, title, deleted_at)",
+    );
+
+    signIn({
+      tables: {
+        cv_documents: {
+          data: { ...row, job_post: { ...JOB, deleted_at: "2026-10-26T09:00:00Z" } },
+        },
+      },
+    });
+    expect((await getCvDocument("4e9f6c1a-5b7d-4e2f-8a1c-9d0b2e4f6a8c")).jobPost).toBeNull();
   });
 
   it("reads a CV's own design, and refuses a corrupt one", async () => {

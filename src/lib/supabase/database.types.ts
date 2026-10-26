@@ -351,6 +351,7 @@ export type Database = {
           deleted_at: string | null;
           design: Json | null;
           id: string;
+          job_post_id: string | null;
           locale: string;
           name: string;
           owner_id: string;
@@ -368,6 +369,7 @@ export type Database = {
           deleted_at?: string | null;
           design?: Json | null;
           id?: string;
+          job_post_id?: string | null;
           locale?: string;
           name: string;
           owner_id?: string;
@@ -384,6 +386,7 @@ export type Database = {
           deleted_at?: string | null;
           design?: Json | null;
           id?: string;
+          job_post_id?: string | null;
           locale?: string;
           name?: string;
           owner_id?: string;
@@ -393,6 +396,13 @@ export type Database = {
           visual_template_key?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "cv_documents_job_post_fk";
+            columns: ["owner_id", "job_post_id"];
+            isOneToOne: false;
+            referencedRelation: "job_posts";
+            referencedColumns: ["owner_id", "id"];
+          },
           {
             foreignKeyName: "cv_documents_owner_id_fkey";
             columns: ["owner_id"];
